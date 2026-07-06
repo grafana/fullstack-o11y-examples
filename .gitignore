@@ -1,0 +1,52 @@
+# Secrets — never commit real credentials (any depth). Keep .env.example tracked.
+**/.env
+**/.env.*
+!**/.env.example
+
+# Node
+**/node_modules
+**/dist
+
+# Python
+**/__pycache__/
+*.pyc
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+**/vendor/
+go.work
+go.work.sum
+
+# Java (Maven)
+**/target/
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+replay_pid*
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+.mvn/timing.properties
+
+# Ruby
+*.gem
+*.rbc
+.bundle/
+**/vendor/bundle
+/.yardoc/
+**/coverage/
+
+# OS
+.DS_Store

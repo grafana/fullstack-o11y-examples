@@ -1,0 +1,60 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: bookstore
+---
+# Non-secret configuration shared by the backend services.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bookstore-config
+  namespace: bookstore
+data:
+  MYSQL_HOST: mysql
+  MYSQL_PORT: "3306"
+  MYSQL_DATABASE: bookstore
+  POSTGRES_HOST: postgres
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: shipping
+  SHIPPING_URL: http://shipping:8003
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4317
+  OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore
+---
+# Application credentials. Replace the placeholder values before applying
+# (e.g. `kubectl create secret ... --dry-run=client -o yaml`), or use a sealed-secrets/SOPS workflow.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: bookstore-db
+  namespace: bookstore
+type: Opaque
+stringData:
+  MYSQL_ROOT_PASSWORD: rootpass
+  MYSQL_USER: bookstore
+  MYSQL_PASSWORD: bookstorepass
+  POSTGRES_USER: shipping
+  POSTGRES_PASSWORD: shippingpass
+  # DB Observability DSNs consumed by Alloy (targets the in-cluster DB Services).
+  # Keep in sync with the passwords above. Component uses "@tcp(...)"; mysqld_exporter uses "@(...)".
+  MYSQL_DSN: "root:rootpass@tcp(mysql:3306)/"
+  MYSQL_EXPORTER_DSN: "root:rootpass@(mysql:3306)/"
+  POSTGRES_DSN: "postgres://db-o11y:db-o11y-pass@postgres:5432/shipping?sslmode=disable"
+---
+# Grafana Cloud credentials consumed by Alloy. Fill in from Grafana Cloud →
+# Connections. Use one Cloud Access Policy token as each *_PASSWORD.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: grafana-cloud
+  namespace: bookstore
+type: Opaque
+stringData:
+  GCLOUD_PROMETHEUS_URL: ""
+  GCLOUD_PROMETHEUS_USERNAME: ""
+  GCLOUD_PROMETHEUS_PASSWORD: ""
+  GCLOUD_LOKI_URL: ""
+  GCLOUD_LOKI_USERNAME: ""
+  GCLOUD_LOKI_PASSWORD: ""
+  OTEL_EXPORTER_OTLP_ENDPOINT: ""
+  OTEL_EXPORTER_OTLP_USERNAME: ""
+  OTEL_EXPORTER_OTLP_PASSWORD: ""

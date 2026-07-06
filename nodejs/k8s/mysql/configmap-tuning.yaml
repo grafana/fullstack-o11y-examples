@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-tuning
+  namespace: bookstore
+data:
+  dbo11y.cnf: |
+    # Grafana Database Observability — MySQL server config.
+    # Mounted at /etc/mysql/conf.d/dbo11y.cnf so the settings the DB o11y
+    # database_observability.mysql collector needs (full query digests + SQL text,
+    # performance_schema statement consumers/instruments) live in one config file
+    # instead of scattered command-line flags.
+    [mysqld]
+    performance-schema = ON
+    
+    # Capture full normalized digests + SQL text; defaults truncate at 1024, which
+    # hides the tail of longer statements in query_samples / explain_plans.
+    # max-digest-length must be >= performance-schema-max-digest-length.
+    max-digest-length                      = 4096
+    performance-schema-max-digest-length   = 4096
+    performance-schema-max-sql-text-length = 4096
+    
+    # Statement consumers + instruments the collector reads events from.
+    performance-schema-consumer-events-statements-current      = ON
+    performance-schema-consumer-events-statements-history      = ON
+    performance-schema-consumer-events-statements-history-long = ON
+    performance-schema-instrument                              = 'statement/%=ON'

@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: bookstore
+spec:
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: bookstore
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:latest
+          # DB o11y server settings live in postgresql.conf (postgres-config
+          # ConfigMap), included into $PGDATA/postgresql.conf by 00-dbo11y-include.sh.
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              valueFrom: { configMapKeyRef: { name: bookstore-config, key: POSTGRES_DB } }
+            - name: POSTGRES_USER
+              valueFrom: { secretKeyRef: { name: bookstore-db, key: POSTGRES_USER } }
+            - name: POSTGRES_PASSWORD
+              valueFrom: { secretKeyRef: { name: bookstore-db, key: POSTGRES_PASSWORD } }
+          volumeMounts:
+            - name: init
+              mountPath: /docker-entrypoint-initdb.d
+            - name: config
+              mountPath: /etc/postgresql/postgresql.conf
+              subPath: postgresql.conf
+            # postgres:18+ stores data in a version subdirectory; mount at the parent.
+            - name: data
+              mountPath: /var/lib/postgresql
+          readinessProbe:
+            exec: { command: ["pg_isready", "-U", "shipping", "-d", "shipping"] }
+            initialDelaySeconds: 15
+            periodSeconds: 10
+      volumes:
+        - name: init
+          configMap:
+            name: postgres-init
+            defaultMode: 0755
+        - name: config
+          configMap:
+            name: postgres-config
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 2Gi

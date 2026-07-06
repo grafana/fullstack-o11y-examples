@@ -1,0 +1,95 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init
+  namespace: bookstore
+data:
+  00-dbo11y-include.sh: |
+    #!/bin/sh
+    # Append an `include` of the mounted DB o11y server config to the freshly
+    # initialized postgresql.conf (idempotent). Runs once during initdb; the include
+    # persists in PGDATA and is read on every subsequent server start. No `set -e`:
+    # in k8s this is sourced (ConfigMap files aren't executable), so a failing guard
+    # must not abort the entrypoint — the `||` append handles the one command itself.
+    CONF="$PGDATA/postgresql.conf"
+    LINE="include = '/etc/postgresql/postgresql.conf'"
+    grep -qF "$LINE" "$CONF" || printf '\n# Grafana Database Observability settings\n%s\n' "$LINE" >> "$CONF"
+  01-init.sql: |
+    -- PostgreSQL init: shipping database
+    -- Runs automatically against POSTGRES_DB (shipping) on first container start.
+    -- Seeds: 2 warehouses (California, New York) + 1 shipment per MySQL order (100 total).
+    
+    -- ─── Database Observability ──────────────────────────────────────────────────
+    -- pg_stat_statements powers the DB o11y query_samples / explain_plans collectors.
+    -- Requires shared_preload_libraries=pg_stat_statements (set on the server command).
+    CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+    
+    -- ─── Schema ──────────────────────────────────────────────────────────────────
+    CREATE TABLE warehouses (
+      warehouse_id SERIAL PRIMARY KEY,
+      name         VARCHAR(128) NOT NULL,
+      address      VARCHAR(255) NOT NULL,
+      city         VARCHAR(64)  NOT NULL,
+      state        VARCHAR(32)  NOT NULL,
+      zip          VARCHAR(16)  NOT NULL
+    );
+    
+    CREATE TABLE shipments (
+      shipment_id      SERIAL PRIMARY KEY,
+      order_id         INT NOT NULL UNIQUE,        -- references bookstore.orders.order_id (MySQL)
+      warehouse_id     INT NOT NULL REFERENCES warehouses(warehouse_id),
+      customer_name    VARCHAR(128) NOT NULL,
+      shipping_address VARCHAR(255) NOT NULL,
+      city             VARCHAR(64)  NOT NULL,
+      state            VARCHAR(32)  NOT NULL,
+      zip              VARCHAR(16)  NOT NULL,
+      status           VARCHAR(16)  NOT NULL DEFAULT 'pending',
+      shipped_date     DATE
+    );
+    
+    CREATE INDEX idx_shipments_order ON shipments(order_id);
+    
+    -- ─── Seed: 2 warehouses ──────────────────────────────────────────────────────
+    INSERT INTO warehouses (warehouse_id, name, address, city, state, zip) VALUES
+      (1, 'West Coast Fulfillment Center', '1000 Warehouse Way', 'Oakland',  'California', '94607'),
+      (2, 'East Coast Distribution Hub',   '2000 Logistics Blvd', 'Buffalo', 'New York',   '14201');
+    SELECT setval('warehouses_warehouse_id_seq', 2, true);
+    
+    -- ─── Seed: 100 shipments (one per order) ─────────────────────────────────────
+    -- Orders 1-100 map to customers via ((order_id-1)/10)+1 (MySQL seeds 10 orders/customer).
+    -- Western customers (1-5) ship from warehouse 1 (CA); eastern (6-10) from warehouse 2 (NY).
+    WITH cust (customer_id, name, address, city, state, zip, warehouse_id) AS (
+      VALUES
+        (1,  'Alice Johnson',  '123 Maple St',   'Los Angeles',   'CA', '90012', 1),
+        (2,  'Bob Smith',      '456 Oak Ave',    'San Francisco', 'CA', '94103', 1),
+        (3,  'Carol Williams', '789 Pine Rd',    'Seattle',       'WA', '98101', 1),
+        (4,  'David Brown',    '321 Elm St',     'Denver',        'CO', '80202', 1),
+        (5,  'Emma Davis',     '654 Cedar Ln',   'Phoenix',       'AZ', '85004', 1),
+        (6,  'Frank Miller',   '987 Birch Blvd', 'New York',      'NY', '10001', 2),
+        (7,  'Grace Wilson',   '147 Spruce Ct',  'Boston',        'MA', '02108', 2),
+        (8,  'Henry Moore',    '258 Willow Way', 'Miami',         'FL', '33130', 2),
+        (9,  'Ivy Taylor',     '369 Aspen Dr',   'Chicago',       'IL', '60601', 2),
+        (10, 'Jack Anderson',  '741 Poplar Pl',  'Atlanta',       'GA', '30303', 2)
+    )
+    INSERT INTO shipments (order_id, warehouse_id, customer_name, shipping_address, city, state, zip, status, shipped_date)
+    SELECT
+      gs                                                             AS order_id,
+      c.warehouse_id,
+      c.name, c.address, c.city, c.state, c.zip,
+      (ARRAY['pending','processing','shipped','delivered'])[1 + (gs % 4)] AS status,
+      CASE WHEN gs % 4 IN (2, 3)
+           THEN CURRENT_DATE - ((gs % 30) || ' days')::interval
+           ELSE NULL END                                            AS shipped_date
+    FROM generate_series(1, 100) AS gs
+    JOIN cust c ON c.customer_id = ((gs - 1) / 10) + 1;
+  02-dbo11y-user.sql: |
+    -- Grafana Database Observability — least-privilege collector role.
+    -- Runs after the seed (mounted as 02-dbo11y-user.sql, after 01-init.sql). Grants the
+    -- monitoring/read roles the database_observability.postgres collector needs, and opts
+    -- the collector's own role out of pg_stat_statements tracking. Role settings persist
+    -- in the catalog (unlike MySQL's in-memory performance_schema).
+    CREATE USER "db-o11y" WITH PASSWORD 'db-o11y-pass';
+    GRANT pg_monitor TO "db-o11y";
+    GRANT pg_read_all_stats TO "db-o11y";
+    ALTER ROLE "db-o11y" SET pg_stat_statements.track = 'none';
+    GRANT pg_read_all_data TO "db-o11y";

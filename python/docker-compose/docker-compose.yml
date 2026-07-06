@@ -1,0 +1,172 @@
+name: bookstore-o11y-python
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: bookstore-mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      # Seed schema/data, then create the DB o11y collector user (ordered 01-, 02-).
+      - ./databases/mysql/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./databases/mysql/dbo11y-user.sql:/docker-entrypoint-initdb.d/02-dbo11y-user.sql:ro
+      # DB o11y server config (performance_schema + full digests/SQL text).
+      - ./databases/mysql/dbo11y.cnf:/etc/mysql/conf.d/dbo11y.cnf:ro
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+      start_period: 30s
+    networks: [bookstore]
+
+  postgres:
+    image: postgres:latest
+    container_name: bookstore-postgres
+    ports:
+      - "5432:5432"
+    # DB o11y server settings (pg_stat_statements + verbose logging) live in
+    # databases/postgres/postgresql.conf, included into $PGDATA/postgresql.conf by
+    # the init script below. logging_collector writes to <PGDATA>/log, which Alloy
+    # tails read-only via loki.source.file (log_line_prefix %e = SQLSTATE).
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      # Seed schema/data, then create the DB o11y collector role (ordered 01-, 02-).
+      - ./databases/postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./databases/postgres/dbo11y-user.sql:/docker-entrypoint-initdb.d/02-dbo11y-user.sql:ro
+      # Append `include '/etc/postgresql/postgresql.conf'` to $PGDATA/postgresql.conf.
+      - ./databases/postgres/dbo11y-include.sh:/docker-entrypoint-initdb.d/00-dbo11y-include.sh:ro
+      - ./databases/postgres/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+      start_period: 20s
+    networks: [bookstore]
+
+  alloy:
+    image: grafana/alloy:v1.17.1
+    container_name: bookstore-alloy
+    ports:
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+      - "12345:12345" # Alloy UI
+      - "12347:12347" # Faro receiver
+    volumes:
+      - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
+      # Read PostgreSQL server logs (postgres_data volume) for the DB o11y "logs"
+      # collector — no container-runtime socket needed.
+      - postgres_data:/var/lib/postgresql:ro
+    environment:
+      GCLOUD_PROMETHEUS_URL: ${GCLOUD_PROMETHEUS_URL}
+      GCLOUD_PROMETHEUS_USERNAME: ${GCLOUD_PROMETHEUS_USERNAME}
+      GCLOUD_PROMETHEUS_PASSWORD: ${GCLOUD_PROMETHEUS_PASSWORD}
+      GCLOUD_LOKI_URL: ${GCLOUD_LOKI_URL}
+      GCLOUD_LOKI_USERNAME: ${GCLOUD_LOKI_USERNAME}
+      GCLOUD_LOKI_PASSWORD: ${GCLOUD_LOKI_PASSWORD}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+      OTEL_EXPORTER_OTLP_USERNAME: ${OTEL_EXPORTER_OTLP_USERNAME}
+      OTEL_EXPORTER_OTLP_PASSWORD: ${OTEL_EXPORTER_OTLP_PASSWORD}
+      # Database Observability DSNs (Alloy reaches the DBs on the bookstore network).
+      # The component uses the go-sql-driver "@tcp(...)" form; mysqld_exporter uses "@(...)".
+      MYSQL_DSN: "root:${MYSQL_ROOT_PASSWORD}@tcp(mysql:3306)/"
+      MYSQL_EXPORTER_DSN: "root:${MYSQL_ROOT_PASSWORD}@(mysql:3306)/"
+      POSTGRES_DSN: "postgres://db-o11y:db-o11y-pass@postgres:5432/${POSTGRES_DB}?sslmode=disable"
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      # database_observability.* components are experimental — allow them to load.
+      - --stability.level=experimental
+      - /etc/alloy/config.alloy
+    networks: [bookstore]
+
+  products:
+    build:
+      context: ./services
+      dockerfile: products/Dockerfile
+    container_name: bookstore-products
+    ports:
+      - "8001:8001"
+    environment: &mysql_svc_env
+      SERVICE_PORT: 8001
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: root
+      MYSQL_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4317
+      OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore
+    depends_on:
+      mysql: {condition: service_healthy}
+      alloy: {condition: service_started}
+    networks: [bookstore]
+
+  checkout:
+    build:
+      context: ./services
+      dockerfile: checkout/Dockerfile
+    container_name: bookstore-checkout
+    ports:
+      - "8002:8002"
+    environment:
+      <<: *mysql_svc_env
+      SERVICE_PORT: 8002
+      SHIPPING_URL: http://shipping:8003
+    depends_on:
+      mysql: {condition: service_healthy}
+      alloy: {condition: service_started}
+    networks: [bookstore]
+
+  shipping:
+    build:
+      context: ./services
+      dockerfile: shipping/Dockerfile
+    container_name: bookstore-shipping
+    ports:
+      - "8003:8003"
+    environment:
+      SERVICE_PORT: 8003
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4317
+      OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore
+    depends_on:
+      postgres: {condition: service_healthy}
+      alloy: {condition: service_started}
+    networks: [bookstore]
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_FARO_ENDPOINT: ${VITE_FARO_ENDPOINT:-}
+    container_name: bookstore-frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - products
+      - checkout
+      - shipping
+    networks: [bookstore]
+
+volumes:
+  mysql_data:
+  postgres_data:
+
+networks:
+  bookstore:
+    driver: bridge

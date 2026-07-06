@@ -1,0 +1,27 @@
+# All gems for the three bookstore services (shared build context ./services).
+source "https://rubygems.org"
+
+ruby ">= 3.3"
+
+# Web framework + server
+gem "sinatra", "~> 4.1"
+gem "rackup", "~> 2.2"
+gem "puma", "~> 6.4"
+
+# Database access
+gem "sequel", "~> 5.89"
+gem "mysql2", "~> 0.5"   # products + checkout -> MySQL
+gem "pg", "~> 1.5"       # shipping -> PostgreSQL
+
+# Outbound HTTP (checkout -> shipping), with trace-context propagation.
+gem "faraday", "~> 2.12"
+
+# OpenTelemetry: SDK + OTLP exporter + framework/DB/HTTP instrumentation.
+gem "opentelemetry-sdk", "~> 1.6"
+gem "opentelemetry-exporter-otlp", "~> 0.30"
+gem "opentelemetry-instrumentation-sinatra", "~> 0.24"
+gem "opentelemetry-instrumentation-rack", "~> 0.26"
+gem "opentelemetry-instrumentation-faraday", "~> 0.26"
+# DB spans carrying db.statement (Sequel runs on the mysql2 / pg client gems).
+gem "opentelemetry-instrumentation-mysql2", "~> 0.34"
+gem "opentelemetry-instrumentation-pg", "~> 0.36"

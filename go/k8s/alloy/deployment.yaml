@@ -1,0 +1,57 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: alloy
+  namespace: bookstore
+spec:
+  selector:
+    app: alloy
+  ports:
+    - { name: otlp-grpc, port: 4317, targetPort: 4317 }
+    - { name: otlp-http, port: 4318, targetPort: 4318 }
+    - { name: faro, port: 12347, targetPort: 12347 }
+    - { name: ui, port: 12345, targetPort: 12345 }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alloy
+  namespace: bookstore
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alloy
+  template:
+    metadata:
+      labels:
+        app: alloy
+    spec:
+      serviceAccountName: alloy
+      containers:
+        - name: alloy
+          image: grafana/alloy:v1.17.1
+          args:
+            - run
+            - --server.http.listen-addr=0.0.0.0:12345
+            # database_observability.* components are experimental.
+            - --stability.level=experimental
+            - /etc/alloy/config.alloy
+          ports:
+            - { containerPort: 4317 }
+            - { containerPort: 4318 }
+            - { containerPort: 12347 }
+            - { containerPort: 12345 }
+          envFrom:
+            - secretRef:
+                name: grafana-cloud
+            # provides MYSQL_DSN / POSTGRES_DSN for the DB o11y components
+            - secretRef:
+                name: bookstore-db
+          volumeMounts:
+            - name: config
+              mountPath: /etc/alloy
+      volumes:
+        - name: config
+          configMap:
+            name: alloy-config

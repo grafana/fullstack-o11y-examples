@@ -1,0 +1,238 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alloy-config
+  namespace: bookstore
+data:
+  config.alloy: |
+    // Grafana Alloy — receives OTLP + Faro from the app and forwards to Grafana Cloud.
+    
+    // ─── OTLP Receiver (backend services) ───────────────────────────────────────
+    otelcol.receiver.otlp "default" {
+      grpc {
+        endpoint = "0.0.0.0:4317"
+      }
+      http {
+        endpoint = "0.0.0.0:4318"
+      }
+      output {
+        metrics = [otelcol.processor.batch.default.input]
+        logs    = [otelcol.processor.batch.default.input]
+        traces  = [otelcol.processor.batch.default.input]
+      }
+    }
+    
+    // ─── Faro Receiver (React frontend) ─────────────────────────────────────────
+    // Point VITE_FARO_ENDPOINT here (http://<host>:12347/collect) to route frontend
+    // telemetry through Alloy instead of directly to Grafana Cloud.
+    faro.receiver "frontend" {
+      server {
+        listen_address = "0.0.0.0"
+        listen_port    = 12347
+        cors_allowed_origins = ["*"]
+      }
+      output {
+        // Faro logs are Loki-native, so they go straight to loki.write (a
+        // loki.LogsReceiver); traces go through the otelcol batch → Tempo.
+        logs   = [loki.write.grafana_cloud.receiver]
+        traces = [otelcol.processor.batch.default.input]
+      }
+    }
+    
+    // ─── Batch Processor ────────────────────────────────────────────────────────
+    otelcol.processor.batch "default" {
+      output {
+        metrics = [otelcol.exporter.prometheus.default.input]
+        logs    = [otelcol.exporter.loki.default.input]
+        traces  = [otelcol.exporter.otlphttp.grafana_cloud.input]
+      }
+    }
+    
+    // ─── Metrics → Grafana Cloud Prometheus ─────────────────────────────────────
+    otelcol.exporter.prometheus "default" {
+      forward_to = [prometheus.remote_write.grafana_cloud.receiver]
+    }
+    
+    prometheus.remote_write "grafana_cloud" {
+      endpoint {
+        url = sys.env("GCLOUD_PROMETHEUS_URL")
+        basic_auth {
+          username = sys.env("GCLOUD_PROMETHEUS_USERNAME")
+          password = sys.env("GCLOUD_PROMETHEUS_PASSWORD")
+        }
+      }
+    }
+    
+    // ─── Logs → Grafana Cloud Loki ──────────────────────────────────────────────
+    otelcol.exporter.loki "default" {
+      forward_to = [loki.write.grafana_cloud.receiver]
+    }
+    
+    loki.write "grafana_cloud" {
+      endpoint {
+        url = sys.env("GCLOUD_LOKI_URL")
+        basic_auth {
+          username = sys.env("GCLOUD_LOKI_USERNAME")
+          password = sys.env("GCLOUD_LOKI_PASSWORD")
+        }
+      }
+    }
+    
+    // ─── Traces → Grafana Cloud OTLP gateway (otelcol.exporter.otlphttp) ─────────
+    // The unified OTLP/HTTP gateway; the exporter appends /v1/traces to the endpoint.
+    otelcol.exporter.otlphttp "grafana_cloud" {
+      client {
+        endpoint = sys.env("OTEL_EXPORTER_OTLP_ENDPOINT")
+        auth     = otelcol.auth.basic.grafana_cloud_otlp.handler
+      }
+    }
+    
+    otelcol.auth.basic "grafana_cloud_otlp" {
+      username = sys.env("OTEL_EXPORTER_OTLP_USERNAME")
+      password = sys.env("OTEL_EXPORTER_OTLP_PASSWORD")
+    }
+    
+    // ─── Database Observability (DBo11y) ─────────────────────────────────────────
+    // MySQL (books_inventory/customers/orders) and PostgreSQL (warehouses/shipments).
+    // Metrics → existing prometheus.remote_write.grafana_cloud; logs → existing
+    // loki.write.grafana_cloud. The integrations/db-o11y job label is required by the
+    // Grafana Database Observability app. DSNs come from the Alloy service env.
+    
+    // ── MySQL ────────────────────────────────────────────────────────────────────
+    // mysqld_exporter provides the metric targets; the component collects query
+    // details / schema / samples / explain plans and forwards them to Loki.
+    // query_samples runs with redaction disabled so the real SQL text is captured.
+    prometheus.exporter.mysql "dbo11y_mysql" {
+      data_source_name  = sys.env("MYSQL_EXPORTER_DSN")
+      enable_collectors = ["perf_schema.eventsstatements", "perf_schema.eventswaits"]
+      perf_schema.eventsstatements {
+        limit      = 100
+        text_limit = 0
+      }
+    }
+    
+    database_observability.mysql "bookstore_mysql" {
+      data_source_name = sys.env("MYSQL_DSN")
+      forward_to       = [loki.relabel.dbo11y_mysql.receiver]
+      targets          = prometheus.exporter.mysql.dbo11y_mysql.targets
+    
+      query_samples {
+        disable_query_redaction     = true
+        auto_enable_setup_consumers = true
+        collect_interval            = "10s"
+      }
+    
+      allow_update_performance_schema_settings = true
+      enable_collectors                        = ["query_details", "schema_details", "query_samples", "explain_plans"]
+    }
+    
+    loki.relabel "dbo11y_mysql" {
+      forward_to = [loki.write.grafana_cloud.receiver]
+      rule {
+        target_label = "job"
+        replacement  = "integrations/db-o11y"
+      }
+      rule {
+        target_label = "instance"
+        replacement  = "bookstore-mysql"
+      }
+    }
+    
+    discovery.relabel "dbo11y_mysql" {
+      targets = database_observability.mysql.bookstore_mysql.targets
+      rule {
+        target_label = "job"
+        replacement  = "integrations/db-o11y"
+      }
+      rule {
+        target_label = "instance"
+        replacement  = "bookstore-mysql"
+      }
+    }
+    
+    prometheus.scrape "dbo11y_mysql" {
+      targets    = discovery.relabel.dbo11y_mysql.output
+      job_name   = "integrations/db-o11y"
+      forward_to = [prometheus.remote_write.grafana_cloud.receiver]
+    }
+    
+    // ── PostgreSQL ─────────────────────────────────────────────────────────────
+    prometheus.exporter.postgres "dbo11y_postgres" {
+      data_source_names  = [sys.env("POSTGRES_DSN")]
+      enabled_collectors = ["stat_statements", "database", "stat_database", "stat_user_tables"]
+    }
+    
+    database_observability.postgres "bookstore_postgres" {
+      data_source_name = sys.env("POSTGRES_DSN")
+      forward_to       = [loki.relabel.dbo11y_postgres.receiver]
+      targets          = prometheus.exporter.postgres.dbo11y_postgres.targets
+    
+      query_samples {
+        disable_query_redaction = true
+        collect_interval        = "10s"
+      }
+    
+      // "logs" processes the PostgreSQL server logs piped into logs_receiver below —
+      // this is what populates the PostgreSQL error metrics in the DB o11y app.
+      enable_collectors = ["query_details", "query_samples", "schema_details", "explain_plans", "logs"]
+    }
+    
+    // PostgreSQL pod logs → the component's logs_receiver via the Kubernetes API, so
+    // the "logs" collector can parse errors. Requires RBAC to read pods/log (see
+    // alloy/rbac.yaml + serviceAccountName on the Deployment).
+    discovery.kubernetes "pods" {
+      role = "pod"
+    
+      namespaces {
+        names = ["bookstore"]
+      }
+    
+      selectors {
+        role  = "pod"
+        label = "app=postgres"
+      }
+    }
+    
+    discovery.relabel "postgres_pod" {
+      targets = discovery.kubernetes.pods.targets
+      rule {
+        source_labels = ["__meta_kubernetes_pod_container_name"]
+        regex         = "postgres"
+        action        = "keep"
+      }
+    }
+    
+    loki.source.kubernetes "postgres_logs" {
+      targets    = discovery.relabel.postgres_pod.output
+      forward_to = [database_observability.postgres.bookstore_postgres.logs_receiver]
+    }
+    
+    loki.relabel "dbo11y_postgres" {
+      forward_to = [loki.write.grafana_cloud.receiver]
+      rule {
+        target_label = "job"
+        replacement  = "integrations/db-o11y"
+      }
+      rule {
+        target_label = "instance"
+        replacement  = "bookstore-postgres"
+      }
+    }
+    
+    discovery.relabel "dbo11y_postgres" {
+      targets = database_observability.postgres.bookstore_postgres.targets
+      rule {
+        target_label = "job"
+        replacement  = "integrations/db-o11y"
+      }
+      rule {
+        target_label = "instance"
+        replacement  = "bookstore-postgres"
+      }
+    }
+    
+    prometheus.scrape "dbo11y_postgres" {
+      targets    = discovery.relabel.dbo11y_postgres.output
+      job_name   = "integrations/db-o11y"
+      forward_to = [prometheus.remote_write.grafana_cloud.receiver]
+    }
