@@ -74,3 +74,25 @@ K6_BROWSER_HEADLESS=false k6 run k6/browser-flow.js
 
 > Each VU is a full browser — browser tests are heavy, so scale `VUS` with an eye
 > on local CPU/RAM rather than pushing it like a protocol-level test.
+
+## Populate the DB o11y "PostgreSQL errors" panel (`INJECT_ERRORS`)
+
+`database_observability_pg_errors_total` is a Prometheus **counter**, so it doesn't
+exist until PostgreSQL logs its first error. On a clean run the Database
+Observability **PostgreSQL errors** panel therefore shows **"No data"** rather than
+`0`. To light it up during a demo, enable error injection:
+
+```bash
+k6 run -e INJECT_ERRORS=1 k6/browser-flow.js
+```
+
+Each iteration then POSTs an over-length `state` to the shipping service
+(`shipments.state` is `VARCHAR(32)`), which PostgreSQL rejects with **SQLSTATE
+`22001`** — a real server error the Alloy `"logs"` collector parses into
+`database_observability_pg_errors_total`. It's **off by default** so normal load
+stays clean.
+
+> Verified on the Go stack (HTTP 500 + a `22001` PostgreSQL server-log line, counted
+> into the metric). The `shipments` schema is shared across all five languages; a
+> backend that validates field length before insert would reject it at the app layer
+> instead, so confirm the panel actually populates for your stack.

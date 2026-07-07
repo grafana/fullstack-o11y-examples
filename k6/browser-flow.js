@@ -76,6 +76,30 @@ export default async function () {
     check(onBooks, { '1. logged in — catalog visible': (v) => v === true });
     sleep(1);
 
+    // ── Optional: inject a PostgreSQL error (INJECT_ERRORS=1) ──────────────
+    // database_observability_pg_errors_total is a Prometheus counter, so it doesn't
+    // exist until PostgreSQL logs its first error — a clean run leaves the DB o11y
+    // "PostgreSQL errors" panel showing "No data" instead of 0. When enabled, POST an
+    // over-length `state` to the shipping service (shipments.state is VARCHAR(32));
+    // PostgreSQL rejects it with SQLSTATE 22001, a real server error the Alloy "logs"
+    // collector counts. Protocol-level call — independent of the browser session.
+    if (__ENV.INJECT_ERRORS === '1' || __ENV.INJECT_ERRORS === 'true') {
+      const res = http.post(
+        `${BASE}/api/shipments`,
+        JSON.stringify({
+          order_id: 900000 + (__VU * 1000 + __ITER),
+          customer_name: 'load-test',
+          shipping_address: '1 Test St',
+          city: 'Testville',
+          state: 'INJECTED_ERROR__STATE_VALUE_TOO_LONG_FOR_VARCHAR_32',
+          zip: '00000',
+        }),
+        { headers: { 'Content-Type': 'application/json' }, tags: { name: 'inject_pg_error' } },
+      );
+      // Expected to be rejected (Go reference: HTTP 500 + PostgreSQL 22001).
+      check(res, { 'inject: PostgreSQL error triggered (rejected)': (r) => r.status >= 400 });
+    }
+
     // ── 2. Add a book to the cart ─────────────────────────────────────────
     // Pick a random in-stock book (out-of-stock buttons are disabled).
     const addButtons = await page.$$('.book-card button:not([disabled])');
