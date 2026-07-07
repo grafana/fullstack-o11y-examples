@@ -124,6 +124,29 @@ export default async function () {
     await page.waitForSelector('.login-card', { state: 'visible', timeout: 10000 });
     const backToLogin = await page.locator('.login-card').isVisible();
     check(backToLogin, { '5. logged out — back to login': (v) => v === true });
+
+    // ── Flush Faro telemetry before the browser context is destroyed ───────
+    // Faro batches web events + OpenTelemetry spans and flushes them on a timer
+    // (a few seconds) and on page unload. k6's page.close() below is immediate and
+    // doesn't reliably fire the pagehide/visibilitychange lifecycle Faro uses to
+    // flush-on-exit, so without this the journey's tail HTTP activities + traces
+    // sit in the batch buffer and never reach Grafana Cloud Frontend Observability.
+    // Force an OTel flush, nudge the visibility/beacon path, then dwell past the
+    // batch interval so everything is transmitted.
+    await page.evaluate(async () => {
+      try {
+        await globalThis.faro?.api?.getOTEL?.()?.trace?.getTracerProvider?.()?.forceFlush?.();
+      } catch (_e) {
+        /* best-effort — force-flush is not always exposed via the API provider */
+      }
+      try {
+        Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+        document.dispatchEvent(new Event('visibilitychange'));
+      } catch (_e) {
+        /* best-effort */
+      }
+    });
+    sleep(Number(__ENV.FLUSH_WAIT) || 8); // > Faro/OTel batch interval, so the buffer flushes
   } finally {
     await page.close();
   }

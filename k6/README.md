@@ -34,6 +34,18 @@ step breaks. Works against any language stack — they all serve the same fronte
   export K6_BROWSER_EXECUTABLE_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
   ```
 
+- **Frontend built with `VITE_FARO_ENDPOINT`** — required for the browser journeys
+  to show up in Grafana Cloud **Frontend Observability** (sessions, HTTP activities,
+  and traces). The frontend's Faro SDK only initializes when this build arg is set to
+  your Alloy `faro.receiver` (or Cloud collector) URL; otherwise it logs
+  `[faro] disabled` and the journeys run but emit **no** frontend telemetry. Set it
+  in the stack's `.env` (`VITE_FARO_ENDPOINT=...`) and rebuild the `frontend` image.
+
+  > Faro batches events/traces and flushes on a timer + on page unload. Because k6
+  > closes the page immediately, the script force-flushes Faro and dwells
+  > (`FLUSH_WAIT`, default 8s) at the end of each journey so the tail activities and
+  > traces actually reach Grafana Cloud.
+
 ## Run
 
 ```bash
@@ -58,6 +70,7 @@ K6_BROWSER_HEADLESS=false k6 run k6/browser-flow.js
 | `VUS`         | `1`                  | Concurrent virtual users (browsers) |
 | `ITERATIONS`  | `10`                 | Total journeys across all VUs    |
 | `MAX_DURATION`| `10m`                | Hard cap on the scenario         |
+| `FLUSH_WAIT`  | `8`                  | Seconds to dwell after logout so Faro flushes its batched activities/traces before the page closes |
 
 > Each VU is a full browser — browser tests are heavy, so scale `VUS` with an eye
 > on local CPU/RAM rather than pushing it like a protocol-level test.
