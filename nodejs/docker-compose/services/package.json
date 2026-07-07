@@ -12,7 +12,7 @@
     "@opentelemetry/instrumentation-mysql2": "^0.45.0",
     "@opentelemetry/instrumentation-pg": "^0.51.0",
     "@opentelemetry/resources": "^1.30.0",
-    "@opentelemetry/sdk-node": "^0.57.0",
+    "@opentelemetry/sdk-node": "^0.220.0",
     "@opentelemetry/semantic-conventions": "^1.28.0",
     "express": "^4.21.2",
     "mysql2": "^3.11.5",
