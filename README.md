@@ -69,3 +69,34 @@ docker compose up --build
 ```
 
 Run one language at a time — every stack binds the same host ports (8080, 8001–8003, 3306, 5432).
+
+## Demonstration
+
+**Prerequisites / assumptions:** you've configured `.env` to point to your Grafana
+Cloud instance, and the containers plus the [k6 script](./k6) are already running.
+
+### Generate load (manual or k6)
+
+Drive the storefront by hand, or run the [k6 browser script](./k6) to do it for you:
+
+1. Open your browser to <http://localhost:8080/login> and log in as any one of the
+   10 seeded, selectable customers.
+2. Add any books to the cart.
+3. View the cart and check out.
+4. Review your orders.
+5. Log out.
+
+### Full-stack observability demonstration using Grafana Cloud
+
+Follow a single browser interaction all the way down to the SQL query it triggered:
+
+6. Log into your Grafana Cloud instance and navigate to **Observability → Frontend**.
+7. Click the **Bookstore** frontend application.
+8. Open the **Sessions** tab.
+9. Click on a **Session ID**.
+10. Under **Activity**, click **Traces**.
+11. Click on a trace.
+12. Expand the trace's **`sql.conn.query`** span to view its span attributes.
+13. Click on the `SELECT` statement listed as the **`db.statement`** span attribute.
+14. You're now automatically directed to the corresponding **Query Samples** in the
+    Grafana Cloud **Database Observability** app.
