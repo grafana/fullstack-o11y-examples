@@ -2,7 +2,7 @@ module bookstore
 
 go 1.23.0
 
-toolchain go1.23.12
+toolchain go1.25.12
 
 // Dependency versions are resolved by `go mod tidy` (run during the Docker build
 // and CI). Listed here so the module is buildable offline once go.sum exists.
