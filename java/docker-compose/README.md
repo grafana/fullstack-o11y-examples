@@ -22,8 +22,10 @@ docker compose up --build     # first run seeds both databases
 | MySQL                      | localhost:3306 |
 | PostgreSQL                 | localhost:5432 |
 
-Telemetry works without Grafana Cloud credentials (export just fails silently);
-fill in `.env` to see traces/metrics. Faro is disabled until `VITE_FARO_*` are set.
+Telemetry works without Grafana Cloud credentials, though export fails — and
+with profiling the failure is noisy: services and Alloy log upload errors every
+~10s until `GCLOUD_PYROSCOPE_*` are set. Fill in `.env` to see
+traces/metrics/profiles. Faro is disabled until `VITE_FARO_*` are set.
 
 ## Observability
 
@@ -48,9 +50,10 @@ fill in `.env` to see traces/metrics. Faro is disabled until `VITE_FARO_*` are s
   [Pyroscope OTel extension](https://github.com/grafana/otel-profiling-java)
   into the OTel agent (`OTEL_JAVAAGENT_EXTENSIONS`, see `Dockerfile`). It runs
   the embedded Pyroscope Java agent — async-profiler in JFR format, capturing
-  CPU (`itimer`), allocation (512k threshold), and lock (10ms threshold)
-  profiles — and tags every profile with the active span, linking traces to
-  profiles ("Flame graph" tab on a span in Grafana Cloud). Profiles are pushed
+  CPU (`itimer`), allocation (sampled every 512k allocated), and lock (10ms
+  threshold) profiles — and tags every profile with the active span, linking
+  traces to profiles ("Flame graph" tab on a span; uses the Tempo datasource's
+  traces-to-profiles link, preconfigured in Grafana Cloud). Profiles are pushed
   to Alloy (`pyroscope.receive_http` on `alloy:9999`) and forwarded to Grafana
   Cloud Profiles (`GCLOUD_PYROSCOPE_*` in `.env`).
   `PYROSCOPE_APPLICATION_NAME` matches `OTEL_SERVICE_NAME` so profiles and

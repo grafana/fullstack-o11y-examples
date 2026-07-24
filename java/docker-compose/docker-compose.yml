@@ -141,6 +141,8 @@ services:
       SERVICE_PORT: 8002
       SHIPPING_URL: http://shipping:8003
       OTEL_SERVICE_NAME: checkout-service
+      # Other PYROSCOPE_* vars are inherited from the products anchor above;
+      # only the per-service app name needs overriding.
       PYROSCOPE_APPLICATION_NAME: checkout-service
     depends_on:
       mysql: {condition: service_healthy}
