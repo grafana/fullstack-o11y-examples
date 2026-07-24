@@ -19,8 +19,9 @@ Java implementation of the bookstore reference app. **Fully implemented.**
 - **MySQL driver**: `com.mysql:mysql-connector-j` (caching_sha2 / MySQL 9).
   **Postgres driver**: `org.postgresql:postgresql` (Postgres 18).
 - **OpenTelemetry**: the **OTel Java agent** (`-javaagent:opentelemetry-javaagent.jar`)
-  auto-instruments Spring MVC, JDBC, and outbound HTTP, exporting OTLP/gRPC to
-  `alloy:4317`; service name is set per service via `OTEL_SERVICE_NAME`.
+  auto-instruments Spring MVC, JDBC, and outbound HTTP, exporting OTLP
+  (`http/protobuf`, the agent's default since 2.x) to `alloy:4318`; service
+  name is set per service via `OTEL_SERVICE_NAME`.
 - **Frontend**: shared React storefront (identical to the Python reference).
 
 ## Quick start

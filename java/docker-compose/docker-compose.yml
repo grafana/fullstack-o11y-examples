@@ -1,5 +1,19 @@
 name: bookstore-o11y-java
 
+# Continuous profiling, shared by all three Java services. Loading the Pyroscope
+# OTel extension (jar downloaded in each service's Dockerfile) into the OTel
+# agent starts the embedded Pyroscope profiler, which pushes JFR profiles to
+# Alloy → Grafana Cloud. Enabled here rather than baked into the images so
+# other consumers of the same Dockerfiles (java/k8s) opt in explicitly.
+x-pyroscope-env: &pyroscope_env
+  OTEL_JAVAAGENT_EXTENSIONS: /otel/pyroscope-otel-javaagent-extension.jar
+  PYROSCOPE_SERVER_ADDRESS: http://alloy:9999
+  PYROSCOPE_FORMAT: jfr
+  PYROSCOPE_PROFILER_EVENT: itimer
+  PYROSCOPE_PROFILER_ALLOC: 512k
+  PYROSCOPE_PROFILER_LOCK: 10ms
+  PYROSCOPE_LABELS: service_namespace=bookstore
+
 services:
   mysql:
     image: mysql:8.0
@@ -63,7 +77,6 @@ services:
       - "4318:4318"   # OTLP HTTP
       - "12345:12345" # Alloy UI
       - "12347:12347" # Faro receiver
-      - "9999:9999"   # Pyroscope receiver (profiles)
     volumes:
       - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
       # Read PostgreSQL server logs (postgres_data volume) for the DB o11y "logs"
@@ -76,9 +89,9 @@ services:
       GCLOUD_LOKI_URL: ${GCLOUD_LOKI_URL}
       GCLOUD_LOKI_USERNAME: ${GCLOUD_LOKI_USERNAME}
       GCLOUD_LOKI_PASSWORD: ${GCLOUD_LOKI_PASSWORD}
-      GCLOUD_PYROSCOPE_URL: ${GCLOUD_PYROSCOPE_URL:-}
-      GCLOUD_PYROSCOPE_USERNAME: ${GCLOUD_PYROSCOPE_USERNAME:-}
-      GCLOUD_PYROSCOPE_PASSWORD: ${GCLOUD_PYROSCOPE_PASSWORD:-}
+      GCLOUD_PYROSCOPE_URL: ${GCLOUD_PYROSCOPE_URL}
+      GCLOUD_PYROSCOPE_USERNAME: ${GCLOUD_PYROSCOPE_USERNAME}
+      GCLOUD_PYROSCOPE_PASSWORD: ${GCLOUD_PYROSCOPE_PASSWORD}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
       OTEL_EXPORTER_OTLP_USERNAME: ${OTEL_EXPORTER_OTLP_USERNAME}
       OTEL_EXPORTER_OTLP_PASSWORD: ${OTEL_EXPORTER_OTLP_PASSWORD}
@@ -103,6 +116,7 @@ services:
     ports:
       - "8001:8001"
     environment: &mysql_svc_env
+      <<: *pyroscope_env
       SERVICE_PORT: 8001
       MYSQL_HOST: mysql
       MYSQL_PORT: 3306
@@ -114,16 +128,9 @@ services:
       OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4318
       OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore
       OTEL_SERVICE_NAME: products-service
-      # Continuous profiling — the Pyroscope agent (embedded in the OTel javaagent
-      # extension, see Dockerfile) pushes JFR profiles to Alloy → Grafana Cloud.
-      OTEL_PYROSCOPE_START_PROFILING: "true"
+      # Profile streams are keyed by this name (must match OTEL_SERVICE_NAME so
+      # profiles correlate with traces); the rest comes from x-pyroscope-env.
       PYROSCOPE_APPLICATION_NAME: products-service
-      PYROSCOPE_SERVER_ADDRESS: http://alloy:9999
-      PYROSCOPE_FORMAT: jfr
-      PYROSCOPE_PROFILER_EVENT: itimer
-      PYROSCOPE_PROFILER_ALLOC: 512k
-      PYROSCOPE_PROFILER_LOCK: 10ms
-      PYROSCOPE_LABELS: service_namespace=bookstore
     depends_on:
       mysql: {condition: service_healthy}
       alloy: {condition: service_started}
@@ -141,8 +148,8 @@ services:
       SERVICE_PORT: 8002
       SHIPPING_URL: http://shipping:8003
       OTEL_SERVICE_NAME: checkout-service
-      # Other PYROSCOPE_* vars are inherited from the products anchor above;
-      # only the per-service app name needs overriding.
+      # Other PYROSCOPE_* vars are inherited via the anchors above; only the
+      # per-service app name needs overriding.
       PYROSCOPE_APPLICATION_NAME: checkout-service
     depends_on:
       mysql: {condition: service_healthy}
@@ -157,6 +164,7 @@ services:
     ports:
       - "8003:8003"
     environment:
+      <<: *pyroscope_env
       SERVICE_PORT: 8003
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
@@ -168,14 +176,7 @@ services:
       OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4318
       OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore
       OTEL_SERVICE_NAME: shipping-service
-      OTEL_PYROSCOPE_START_PROFILING: "true"
       PYROSCOPE_APPLICATION_NAME: shipping-service
-      PYROSCOPE_SERVER_ADDRESS: http://alloy:9999
-      PYROSCOPE_FORMAT: jfr
-      PYROSCOPE_PROFILER_EVENT: itimer
-      PYROSCOPE_PROFILER_ALLOC: 512k
-      PYROSCOPE_PROFILER_LOCK: 10ms
-      PYROSCOPE_LABELS: service_namespace=bookstore
     depends_on:
       postgres: {condition: service_healthy}
       alloy: {condition: service_started}

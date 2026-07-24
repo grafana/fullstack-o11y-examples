@@ -48,12 +48,17 @@ traces/metrics/profiles. Faro is disabled until `VITE_FARO_*` are set.
   **browser (Faro) → checkout → MySQL** and **→ shipping → PostgreSQL**.
 - **Continuous profiling (Pyroscope)**: each service loads the
   [Pyroscope OTel extension](https://github.com/grafana/otel-profiling-java)
-  into the OTel agent (`OTEL_JAVAAGENT_EXTENSIONS`, see `Dockerfile`). It runs
-  the embedded Pyroscope Java agent — async-profiler in JFR format, capturing
+  into the OTel agent. The jar is downloaded in each `Dockerfile`, but it is
+  only *enabled* via `OTEL_JAVAAGENT_EXTENSIONS` in `docker-compose.yml`
+  (`x-pyroscope-env`), so consumers of the same images that don't configure
+  profiling (e.g. [`../k8s`](../k8s)) are unaffected. The extension runs the
+  embedded Pyroscope Java agent — async-profiler in JFR format, capturing
   CPU (`itimer`), allocation (sampled every 512k allocated), and lock (10ms
-  threshold) profiles — and tags every profile with the active span, linking
-  traces to profiles ("Flame graph" tab on a span; uses the Tempo datasource's
-  traces-to-profiles link, preconfigured in Grafana Cloud). Profiles are pushed
+  threshold) profiles — and labels profiles recorded during local root spans
+  with the span, linking traces to profiles ("Flame graph" tab on a span; uses
+  the Tempo datasource's traces-to-profiles link, preconfigured in Grafana
+  Cloud). Span correlation adds a `trace_id` profile label, which needs a
+  Pyroscope server ≥ v2.0.3 (Grafana Cloud qualifies). Profiles are pushed
   to Alloy (`pyroscope.receive_http` on `alloy:9999`) and forwarded to Grafana
   Cloud Profiles (`GCLOUD_PYROSCOPE_*` in `.env`).
   `PYROSCOPE_APPLICATION_NAME` matches `OTEL_SERVICE_NAME` so profiles and
