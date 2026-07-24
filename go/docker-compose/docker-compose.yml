@@ -1,5 +1,13 @@
 name: bookstore-o11y-go
 
+# Continuous profiling, shared by all three Go services. The pyroscope-go SDK
+# (started in services/common/pyroscope.go) only activates when
+# PYROSCOPE_SERVER_ADDRESS is set, pushing profiles to Alloy → Grafana Cloud.
+# Enabled here rather than baked into the images so other consumers of the
+# same Dockerfiles (go/k8s) opt in explicitly.
+x-pyroscope-env: &pyroscope_env
+  PYROSCOPE_SERVER_ADDRESS: http://alloy:9999
+
 services:
   mysql:
     image: mysql:8.0
@@ -75,6 +83,9 @@ services:
       GCLOUD_LOKI_URL: ${GCLOUD_LOKI_URL}
       GCLOUD_LOKI_USERNAME: ${GCLOUD_LOKI_USERNAME}
       GCLOUD_LOKI_PASSWORD: ${GCLOUD_LOKI_PASSWORD}
+      GCLOUD_PYROSCOPE_URL: ${GCLOUD_PYROSCOPE_URL}
+      GCLOUD_PYROSCOPE_USERNAME: ${GCLOUD_PYROSCOPE_USERNAME}
+      GCLOUD_PYROSCOPE_PASSWORD: ${GCLOUD_PYROSCOPE_PASSWORD}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
       OTEL_EXPORTER_OTLP_USERNAME: ${OTEL_EXPORTER_OTLP_USERNAME}
       OTEL_EXPORTER_OTLP_PASSWORD: ${OTEL_EXPORTER_OTLP_PASSWORD}
@@ -99,6 +110,7 @@ services:
     ports:
       - "8001:8001"
     environment: &mysql_svc_env
+      <<: *pyroscope_env
       SERVICE_PORT: 8001
       MYSQL_HOST: mysql
       MYSQL_PORT: 3306
@@ -107,6 +119,10 @@ services:
       MYSQL_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4317
       OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore
+      # Profile streams are keyed by this name (must match the OTel service name
+      # set in main.go so profiles correlate with traces); the server address
+      # comes from x-pyroscope-env.
+      PYROSCOPE_APPLICATION_NAME: products-service
     depends_on:
       mysql: {condition: service_healthy}
       alloy: {condition: service_started}
@@ -123,6 +139,9 @@ services:
       <<: *mysql_svc_env
       SERVICE_PORT: 8002
       SHIPPING_URL: http://shipping:8003
+      # PYROSCOPE_SERVER_ADDRESS is inherited via the anchors above; only the
+      # per-service app name needs overriding.
+      PYROSCOPE_APPLICATION_NAME: checkout-service
     depends_on:
       mysql: {condition: service_healthy}
       alloy: {condition: service_started}
@@ -136,6 +155,7 @@ services:
     ports:
       - "8003:8003"
     environment:
+      <<: *pyroscope_env
       SERVICE_PORT: 8003
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
@@ -144,6 +164,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4317
       OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore
+      PYROSCOPE_APPLICATION_NAME: shipping-service
     depends_on:
       postgres: {condition: service_healthy}
       alloy: {condition: service_started}
