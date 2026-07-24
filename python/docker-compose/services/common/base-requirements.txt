@@ -13,3 +13,8 @@ opentelemetry-exporter-otlp-proto-grpc==1.27.0
 opentelemetry-instrumentation-flask==0.48b0
 opentelemetry-instrumentation-requests==0.48b0
 opentelemetry-instrumentation-sqlalchemy==0.48b0
+# Pyroscope continuous profiling (CPU sampler + OTel span processor). Installed
+# in every image but a no-op unless PYROSCOPE_SERVER_ADDRESS is set — see
+# common/pyroscope_setup.py.
+pyroscope-io==1.2.0
+pyroscope-otel==1.1.0

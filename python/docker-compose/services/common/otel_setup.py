@@ -24,6 +24,8 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry._logs import set_logger_provider
 
+from common.pyroscope_setup import configure_profiling
+
 
 def configure_telemetry(service_name: str) -> None:
     """Install global trace/metric/log providers exporting OTLP to Alloy."""
@@ -42,6 +44,14 @@ def configure_telemetry(service_name: str) -> None:
     handler = LoggingHandler(level=logging.INFO, logger_provider=logger_provider)
     logging.getLogger().addHandler(handler)
     logging.getLogger().setLevel(logging.INFO)
+
+    # When profiling is enabled, label profile samples with the active root span
+    # (span_id/span_name/trace_id) so Grafana can link traces to profiles. Runs
+    # after logging is wired so the disabled-path info line is not dropped.
+    if configure_profiling(service_name):
+        from pyroscope.otel import PyroscopeSpanProcessor
+
+        tracer_provider.add_span_processor(PyroscopeSpanProcessor())
 
 
 def instrument_flask(app) -> None:
