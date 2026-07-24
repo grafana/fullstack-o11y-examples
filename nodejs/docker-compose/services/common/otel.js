@@ -18,6 +18,7 @@ const { HttpInstrumentation } = require('@opentelemetry/instrumentation-http');
 const { ExpressInstrumentation } = require('@opentelemetry/instrumentation-express');
 const { MySQL2Instrumentation } = require('@opentelemetry/instrumentation-mysql2');
 const { PgInstrumentation } = require('@opentelemetry/instrumentation-pg');
+const { startProfiling } = require('./profiling');
 
 const serviceName = process.env.OTEL_SERVICE_NAME || 'bookstore-service';
 
@@ -35,6 +36,9 @@ const sdk = new NodeSDK({
 });
 
 sdk.start();
+
+// Continuous profiling (Pyroscope) — a no-op unless PYROSCOPE_SERVER_ADDRESS is set.
+startProfiling(serviceName);
 
 process.on('SIGTERM', () => {
   sdk.shutdown().finally(() => process.exit(0));
