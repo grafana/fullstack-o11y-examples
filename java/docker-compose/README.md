@@ -31,7 +31,8 @@ fill in `.env` to see traces/metrics. Faro is disabled until `VITE_FARO_*` are s
   into the image in the `Dockerfile` and enabled via
   `-javaagent:/otel/opentelemetry-javaagent.jar`. The agent auto-instruments
   Spring MVC (server spans + metrics), JDBC (DB client spans), and outbound HTTP
-  (`RestClient`), reading `OTEL_EXPORTER_OTLP_ENDPOINT` (→ `alloy:4317`) and
+  (`RestClient`), reading `OTEL_EXPORTER_OTLP_ENDPOINT` (→ `alloy:4318`,
+  OTLP HTTP — the agent's default protocol is `http/protobuf` since 2.x) and
   `OTEL_SERVICE_NAME` (products-service / checkout-service / shipping-service).
 - **SQLCommenter**: the agent does not inject SQLCommenter by default, so each
   service ships a small `SqlCommenter` helper (`SqlCommenter.annotate(sql)`) that

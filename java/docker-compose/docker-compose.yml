@@ -109,7 +109,9 @@ services:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: root
       MYSQL_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4317
+      # OTel Java agent 2.x defaults to http/protobuf, so use Alloy's OTLP HTTP
+      # port (4318), not the gRPC port (4317).
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4318
       OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore
       OTEL_SERVICE_NAME: products-service
       # Continuous profiling — the Pyroscope agent (embedded in the OTel javaagent
@@ -159,7 +161,9 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4317
+      # OTel Java agent 2.x defaults to http/protobuf, so use Alloy's OTLP HTTP
+      # port (4318), not the gRPC port (4317).
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4318
       OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore
       OTEL_SERVICE_NAME: shipping-service
       OTEL_PYROSCOPE_START_PROFILING: "true"
