@@ -63,6 +63,7 @@ services:
       - "4318:4318"   # OTLP HTTP
       - "12345:12345" # Alloy UI
       - "12347:12347" # Faro receiver
+      - "9999:9999"   # Pyroscope receiver (profiles)
     volumes:
       - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
       # Read PostgreSQL server logs (postgres_data volume) for the DB o11y "logs"
@@ -75,6 +76,9 @@ services:
       GCLOUD_LOKI_URL: ${GCLOUD_LOKI_URL}
       GCLOUD_LOKI_USERNAME: ${GCLOUD_LOKI_USERNAME}
       GCLOUD_LOKI_PASSWORD: ${GCLOUD_LOKI_PASSWORD}
+      GCLOUD_PYROSCOPE_URL: ${GCLOUD_PYROSCOPE_URL:-}
+      GCLOUD_PYROSCOPE_USERNAME: ${GCLOUD_PYROSCOPE_USERNAME:-}
+      GCLOUD_PYROSCOPE_PASSWORD: ${GCLOUD_PYROSCOPE_PASSWORD:-}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
       OTEL_EXPORTER_OTLP_USERNAME: ${OTEL_EXPORTER_OTLP_USERNAME}
       OTEL_EXPORTER_OTLP_PASSWORD: ${OTEL_EXPORTER_OTLP_PASSWORD}
@@ -108,6 +112,16 @@ services:
       OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4317
       OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore
       OTEL_SERVICE_NAME: products-service
+      # Continuous profiling — the Pyroscope agent (embedded in the OTel javaagent
+      # extension, see Dockerfile) pushes JFR profiles to Alloy → Grafana Cloud.
+      OTEL_PYROSCOPE_START_PROFILING: "true"
+      PYROSCOPE_APPLICATION_NAME: products-service
+      PYROSCOPE_SERVER_ADDRESS: http://alloy:9999
+      PYROSCOPE_FORMAT: jfr
+      PYROSCOPE_PROFILER_EVENT: itimer
+      PYROSCOPE_PROFILER_ALLOC: 512k
+      PYROSCOPE_PROFILER_LOCK: 10ms
+      PYROSCOPE_LABELS: service_namespace=bookstore
     depends_on:
       mysql: {condition: service_healthy}
       alloy: {condition: service_started}
@@ -125,6 +139,7 @@ services:
       SERVICE_PORT: 8002
       SHIPPING_URL: http://shipping:8003
       OTEL_SERVICE_NAME: checkout-service
+      PYROSCOPE_APPLICATION_NAME: checkout-service
     depends_on:
       mysql: {condition: service_healthy}
       alloy: {condition: service_started}
@@ -147,6 +162,14 @@ services:
       OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4317
       OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore
       OTEL_SERVICE_NAME: shipping-service
+      OTEL_PYROSCOPE_START_PROFILING: "true"
+      PYROSCOPE_APPLICATION_NAME: shipping-service
+      PYROSCOPE_SERVER_ADDRESS: http://alloy:9999
+      PYROSCOPE_FORMAT: jfr
+      PYROSCOPE_PROFILER_EVENT: itimer
+      PYROSCOPE_PROFILER_ALLOC: 512k
+      PYROSCOPE_PROFILER_LOCK: 10ms
+      PYROSCOPE_LABELS: service_namespace=bookstore
     depends_on:
       postgres: {condition: service_healthy}
       alloy: {condition: service_started}

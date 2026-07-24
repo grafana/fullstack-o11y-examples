@@ -10,6 +10,10 @@ RUN mvn -q -B -DskipTests package
 FROM eclipse-temurin:21-jre
 WORKDIR /app
 ADD https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v2.9.0/opentelemetry-javaagent.jar /otel/opentelemetry-javaagent.jar
+# Pyroscope OTel extension: runs the embedded Pyroscope profiler inside the OTel
+# agent and tags profiles with span IDs for trace ↔ profile correlation.
+ADD https://github.com/grafana/otel-profiling-java/releases/download/v2.1.0/pyroscope-otel-javaagent-extension.jar /otel/pyroscope-otel-javaagent-extension.jar
+ENV OTEL_JAVAAGENT_EXTENSIONS=/otel/pyroscope-otel-javaagent-extension.jar
 COPY --from=build /app/target/*.jar /app/app.jar
 EXPOSE 8002
 ENTRYPOINT ["java", "-javaagent:/otel/opentelemetry-javaagent.jar", "-jar", "/app/app.jar"]

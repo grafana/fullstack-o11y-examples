@@ -43,8 +43,19 @@ fill in `.env` to see traces/metrics. Faro is disabled until `VITE_FARO_*` are s
 - Outbound calls from checkout propagate trace context (agent-injected
   `traceparent` header), so one checkout produces a single distributed trace:
   **browser (Faro) → checkout → MySQL** and **→ shipping → PostgreSQL**.
+- **Continuous profiling (Pyroscope)**: each service loads the
+  [Pyroscope OTel extension](https://github.com/grafana/otel-profiling-java)
+  into the OTel agent (`OTEL_JAVAAGENT_EXTENSIONS`, see `Dockerfile`). It runs
+  the embedded Pyroscope Java agent — async-profiler in JFR format, capturing
+  CPU (`itimer`), allocation (512k threshold), and lock (10ms threshold)
+  profiles — and tags every profile with the active span, linking traces to
+  profiles ("Flame graph" tab on a span in Grafana Cloud). Profiles are pushed
+  to Alloy (`pyroscope.receive_http` on `alloy:9999`) and forwarded to Grafana
+  Cloud Profiles (`GCLOUD_PYROSCOPE_*` in `.env`).
+  `PYROSCOPE_APPLICATION_NAME` matches `OTEL_SERVICE_NAME` so profiles and
+  traces correlate on `service_name`.
 - All telemetry flows through **Grafana Alloy** ([`alloy/config.alloy`](alloy/config.alloy))
-  to Grafana Cloud (Tempo / Prometheus / Loki).
+  to Grafana Cloud (Tempo / Prometheus / Loki / Pyroscope).
 
 ## HTTP API contract & database schema
 
