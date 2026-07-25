@@ -9,6 +9,15 @@ GEM
       logger
     faraday-net_http (3.4.4)
       net-http (~> 0.5)
+    ffi (1.17.4)
+    ffi (1.17.4-aarch64-linux-gnu)
+    ffi (1.17.4-aarch64-linux-musl)
+    ffi (1.17.4-arm64-darwin)
+    ffi (1.17.4-x86-linux-gnu)
+    ffi (1.17.4-x86-linux-musl)
+    ffi (1.17.4-x86_64-darwin)
+    ffi (1.17.4-x86_64-linux-gnu)
+    ffi (1.17.4-x86_64-linux-musl)
     google-protobuf (4.35.1)
       bigdecimal
       rake (~> 13.3)
@@ -103,6 +112,19 @@ GEM
     pg (1.6.3-x86_64-linux-musl)
     puma (6.6.1)
       nio4r (~> 2.0)
+    pyroscope (1.1.1)
+      ffi
+    pyroscope (1.1.1-aarch64-linux)
+      ffi
+    pyroscope (1.1.1-arm64-darwin)
+      ffi
+    pyroscope (1.1.1-x86_64-darwin)
+      ffi
+    pyroscope (1.1.1-x86_64-linux)
+      ffi
+    pyroscope-otel (0.2.0)
+      opentelemetry-api (~> 1.1)
+      pyroscope (>= 1.0, < 2.0)
     rack (3.2.6)
     rack-protection (4.2.1)
       base64 (>= 0.1.0)
@@ -150,6 +172,8 @@ DEPENDENCIES
   opentelemetry-sdk (~> 1.6)
   pg (~> 1.5)
   puma (~> 6.4)
+  pyroscope (~> 1.1)
+  pyroscope-otel (~> 0.2)
   rackup (~> 2.2)
   sequel (~> 5.89)
   sinatra (~> 4.1)

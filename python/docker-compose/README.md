@@ -34,8 +34,28 @@ fill in `.env` to see traces/metrics/logs. Faro is disabled until
   context — enabling trace↔SQL correlation in Grafana Cloud.
 - A checkout produces one distributed trace: **browser (Faro) → checkout →
   MySQL** and **→ shipping → PostgreSQL**.
+- **Continuous profiling (Pyroscope)**: each service starts the
+  [Pyroscope Python SDK](https://grafana.com/docs/pyroscope/latest/configure-client/language-sdks/python/)
+  (`pyroscope-io`, a py-spy-derived in-process sampling CPU profiler) in
+  [`services/common/pyroscope_setup.py`](services/common/pyroscope_setup.py).
+  Both gunicorn workers run the sampler and push under the same application
+  name; Pyroscope aggregates them server-side, so flame graphs show the
+  service, not individual processes.
+  Profiling is opt-in via `PYROSCOPE_SERVER_ADDRESS` in `docker-compose.yml`
+  (`x-pyroscope-env`); when it is unset the init logs one line and does nothing,
+  so consumers of the same images that don't configure profiling (e.g.
+  [`../k8s`](../k8s)) are unaffected. When enabled, the `pyroscope-otel` span
+  processor (added to the tracer provider in `otel_setup.py`) labels profile
+  samples recorded during local root spans with `span_id`, `span_name`, and
+  `trace_id`, linking traces to profiles ("Flame graph" tab on a span; uses the
+  Tempo datasource's traces-to-profiles link, preconfigured in Grafana Cloud).
+  The `trace_id` profile label needs a Pyroscope server ≥ v2.0.3 (Grafana Cloud
+  qualifies). Profiles are pushed to Alloy (`pyroscope.receive_http` on
+  `alloy:9999`) and forwarded to Grafana Cloud Profiles (`GCLOUD_PYROSCOPE_*` in
+  `.env`). `PYROSCOPE_APPLICATION_NAME` matches the OTel service name so
+  profiles and traces correlate on `service_name`.
 - All OTLP + Faro data flows through **Grafana Alloy** ([`alloy/config.alloy`](alloy/config.alloy))
-  to Grafana Cloud (Tempo / Prometheus / Loki).
+  to Grafana Cloud (Tempo / Prometheus / Loki / Pyroscope).
 
 ## HTTP API contract
 
@@ -90,7 +110,7 @@ docker-compose/
 ├── databases/{mysql,postgres}/init.sql
 ├── frontend/            # React + Vite + Faro, served by nginx
 └── services/
-    ├── common/otel_setup.py
+    ├── common/              # otel_setup.py + pyroscope_setup.py (shared bootstrap)
     ├── products/        # Flask + SQLAlchemy → MySQL
     ├── checkout/        # Flask + SQLAlchemy → MySQL, calls shipping
     └── shipping/        # Flask + SQLAlchemy → PostgreSQL

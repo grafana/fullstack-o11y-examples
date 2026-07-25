@@ -25,3 +25,9 @@ gem "opentelemetry-instrumentation-faraday", "~> 0.26"
 # DB spans carrying db.statement (Sequel runs on the mysql2 / pg client gems).
 gem "opentelemetry-instrumentation-mysql2", "~> 0.34"
 gem "opentelemetry-instrumentation-pg", "~> 0.36"
+
+# Continuous profiling: Pyroscope agent (rbspy CPU sampler) + the OTel span
+# processor that links profiles to traces. Only active when
+# PYROSCOPE_SERVER_ADDRESS is set (see common/profiling.rb).
+gem "pyroscope", "~> 1.1"
+gem "pyroscope-otel", "~> 0.2"

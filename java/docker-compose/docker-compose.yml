@@ -1,5 +1,19 @@
 name: bookstore-o11y-java
 
+# Continuous profiling, shared by all three Java services. Loading the Pyroscope
+# OTel extension (jar downloaded in each service's Dockerfile) into the OTel
+# agent starts the embedded Pyroscope profiler, which pushes JFR profiles to
+# Alloy → Grafana Cloud. Enabled here rather than baked into the images so
+# other consumers of the same Dockerfiles (java/k8s) opt in explicitly.
+x-pyroscope-env: &pyroscope_env
+  OTEL_JAVAAGENT_EXTENSIONS: /otel/pyroscope-otel-javaagent-extension.jar
+  PYROSCOPE_SERVER_ADDRESS: http://alloy:9999
+  PYROSCOPE_FORMAT: jfr
+  PYROSCOPE_PROFILER_EVENT: itimer
+  PYROSCOPE_PROFILER_ALLOC: 512k
+  PYROSCOPE_PROFILER_LOCK: 10ms
+  PYROSCOPE_LABELS: namespace=bookstore
+
 services:
   mysql:
     image: mysql:8.0
@@ -75,6 +89,9 @@ services:
       GCLOUD_LOKI_URL: ${GCLOUD_LOKI_URL}
       GCLOUD_LOKI_USERNAME: ${GCLOUD_LOKI_USERNAME}
       GCLOUD_LOKI_PASSWORD: ${GCLOUD_LOKI_PASSWORD}
+      GCLOUD_PYROSCOPE_URL: ${GCLOUD_PYROSCOPE_URL}
+      GCLOUD_PYROSCOPE_USERNAME: ${GCLOUD_PYROSCOPE_USERNAME}
+      GCLOUD_PYROSCOPE_PASSWORD: ${GCLOUD_PYROSCOPE_PASSWORD}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
       OTEL_EXPORTER_OTLP_USERNAME: ${OTEL_EXPORTER_OTLP_USERNAME}
       OTEL_EXPORTER_OTLP_PASSWORD: ${OTEL_EXPORTER_OTLP_PASSWORD}
@@ -99,15 +116,21 @@ services:
     ports:
       - "8001:8001"
     environment: &mysql_svc_env
+      <<: *pyroscope_env
       SERVICE_PORT: 8001
       MYSQL_HOST: mysql
       MYSQL_PORT: 3306
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: root
       MYSQL_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4317
+      # OTel Java agent 2.x defaults to http/protobuf, so use Alloy's OTLP HTTP
+      # port (4318), not the gRPC port (4317).
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4318
       OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore
       OTEL_SERVICE_NAME: products-service
+      # Profile streams are keyed by this name (must match OTEL_SERVICE_NAME so
+      # profiles correlate with traces); the rest comes from x-pyroscope-env.
+      PYROSCOPE_APPLICATION_NAME: products-service
     depends_on:
       mysql: {condition: service_healthy}
       alloy: {condition: service_started}
@@ -125,6 +148,9 @@ services:
       SERVICE_PORT: 8002
       SHIPPING_URL: http://shipping:8003
       OTEL_SERVICE_NAME: checkout-service
+      # Other PYROSCOPE_* vars are inherited via the anchors above; only the
+      # per-service app name needs overriding.
+      PYROSCOPE_APPLICATION_NAME: checkout-service
     depends_on:
       mysql: {condition: service_healthy}
       alloy: {condition: service_started}
@@ -138,15 +164,19 @@ services:
     ports:
       - "8003:8003"
     environment:
+      <<: *pyroscope_env
       SERVICE_PORT: 8003
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4317
+      # OTel Java agent 2.x defaults to http/protobuf, so use Alloy's OTLP HTTP
+      # port (4318), not the gRPC port (4317).
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4318
       OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore
       OTEL_SERVICE_NAME: shipping-service
+      PYROSCOPE_APPLICATION_NAME: shipping-service
     depends_on:
       postgres: {condition: service_healthy}
       alloy: {condition: service_started}

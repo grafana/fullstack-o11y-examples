@@ -22,8 +22,10 @@ docker compose up --build     # first run seeds both databases
 | MySQL                      | localhost:3306 |
 | PostgreSQL                 | localhost:5432 |
 
-Telemetry works without Grafana Cloud credentials (export just fails silently);
-fill in `.env` to see traces/metrics. Faro is disabled until `VITE_FARO_*` are set.
+Telemetry works without Grafana Cloud credentials, though export fails — and
+with profiling the failure is noisy: services and Alloy log upload errors every
+~10s until `GCLOUD_PYROSCOPE_*` are set. Fill in `.env` to see
+traces/metrics/profiles. Faro is disabled until `VITE_FARO_*` are set.
 
 ## Observability
 
@@ -31,7 +33,8 @@ fill in `.env` to see traces/metrics. Faro is disabled until `VITE_FARO_*` are s
   into the image in the `Dockerfile` and enabled via
   `-javaagent:/otel/opentelemetry-javaagent.jar`. The agent auto-instruments
   Spring MVC (server spans + metrics), JDBC (DB client spans), and outbound HTTP
-  (`RestClient`), reading `OTEL_EXPORTER_OTLP_ENDPOINT` (→ `alloy:4317`) and
+  (`RestClient`), reading `OTEL_EXPORTER_OTLP_ENDPOINT` (→ `alloy:4318`,
+  OTLP HTTP — the agent's default protocol is `http/protobuf` since 2.x) and
   `OTEL_SERVICE_NAME` (products-service / checkout-service / shipping-service).
 - **SQLCommenter**: the agent does not inject SQLCommenter by default, so each
   service ships a small `SqlCommenter` helper (`SqlCommenter.annotate(sql)`) that
@@ -43,8 +46,25 @@ fill in `.env` to see traces/metrics. Faro is disabled until `VITE_FARO_*` are s
 - Outbound calls from checkout propagate trace context (agent-injected
   `traceparent` header), so one checkout produces a single distributed trace:
   **browser (Faro) → checkout → MySQL** and **→ shipping → PostgreSQL**.
+- **Continuous profiling (Pyroscope)**: each service loads the
+  [Pyroscope OTel extension](https://github.com/grafana/otel-profiling-java)
+  into the OTel agent. The jar is downloaded in each `Dockerfile`, but it is
+  only *enabled* via `OTEL_JAVAAGENT_EXTENSIONS` in `docker-compose.yml`
+  (`x-pyroscope-env`), so consumers of the same images that don't configure
+  profiling (e.g. [`../k8s`](../k8s)) are unaffected. The extension runs the
+  embedded Pyroscope Java agent — async-profiler in JFR format, capturing
+  CPU (`itimer`), allocation (sampled every 512k allocated), and lock (10ms
+  threshold) profiles — and labels profiles recorded during local root spans
+  with the span, linking traces to profiles ("Flame graph" tab on a span; uses
+  the Tempo datasource's traces-to-profiles link, preconfigured in Grafana
+  Cloud). Span correlation adds a `trace_id` profile label, which needs a
+  Pyroscope server ≥ v2.0.3 (Grafana Cloud qualifies). Profiles are pushed
+  to Alloy (`pyroscope.receive_http` on `alloy:9999`) and forwarded to Grafana
+  Cloud Profiles (`GCLOUD_PYROSCOPE_*` in `.env`).
+  `PYROSCOPE_APPLICATION_NAME` matches `OTEL_SERVICE_NAME` so profiles and
+  traces correlate on `service_name`.
 - All telemetry flows through **Grafana Alloy** ([`alloy/config.alloy`](alloy/config.alloy))
-  to Grafana Cloud (Tempo / Prometheus / Loki).
+  to Grafana Cloud (Tempo / Prometheus / Loki / Pyroscope).
 
 ## HTTP API contract & database schema
 

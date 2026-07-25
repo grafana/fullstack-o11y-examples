@@ -17,12 +17,16 @@ require "opentelemetry/instrumentation/pg"
 require "mysql2"
 require "pg"
 
+require_relative "profiling"
+
 module Common
   module Otel
     # Install the global tracer provider (OTLP/gRPC endpoint from the shared
     # compose env is HTTP for the Ruby exporter, so redirect :4317 -> :4318).
     def self.configure(service_name)
       redirect_otlp_endpoint
+      # Continuous profiling — a no-op unless PYROSCOPE_SERVER_ADDRESS is set.
+      Profiling.configure(service_name)
       ::OpenTelemetry::SDK.configure do |c|
         c.service_name = service_name
         c.use "OpenTelemetry::Instrumentation::Faraday"
@@ -30,6 +34,8 @@ module Common
         c.use "OpenTelemetry::Instrumentation::Mysql2"
         c.use "OpenTelemetry::Instrumentation::PG"
       end
+      # Span profiles: link Pyroscope profiles to the spans they ran under.
+      Profiling.add_span_processor(service_name)
     end
 
     def self.redirect_otlp_endpoint

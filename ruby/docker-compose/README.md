@@ -22,8 +22,10 @@ docker compose up --build     # first run seeds both databases
 | MySQL                      | localhost:3306 |
 | PostgreSQL                 | localhost:5432 |
 
-Telemetry works without Grafana Cloud credentials (export just fails silently);
-fill in `.env` to see traces/metrics. Faro is disabled until `VITE_FARO_*` are set.
+Telemetry works without Grafana Cloud credentials, though export fails — and
+with profiling the failure is noisy: Alloy logs upload errors every ~10s until
+`GCLOUD_PYROSCOPE_*` are set. Fill in `.env` to see traces/metrics/profiles.
+Faro is disabled until `VITE_FARO_*` are set.
 
 ## Observability
 
@@ -44,8 +46,25 @@ fill in `.env` to see traces/metrics. Faro is disabled until `VITE_FARO_*` are s
   instrumentation, which injects the W3C `traceparent` header, so a single
   checkout produces one distributed trace: **browser (Faro) → checkout → MySQL**
   and **→ shipping → PostgreSQL**.
+- **Continuous profiling (Pyroscope)**: each service starts the
+  [`pyroscope` gem](https://github.com/grafana/pyroscope-rb) (an in-process
+  rbspy-based sampler capturing on-CPU profiles) from
+  [`services/common/profiling.rb`](services/common/profiling.rb), called by the
+  shared OTel bootstrap at boot. The gems are baked into the images, but
+  profiling only *activates* when `PYROSCOPE_SERVER_ADDRESS` is set in
+  `docker-compose.yml` (`x-pyroscope-env`) — when unset it logs one line and
+  no-ops, so consumers of the same images that don't configure profiling
+  (e.g. [`../k8s`](../k8s)) are unaffected. The **`pyroscope-otel`** span
+  processor labels profiles recorded during local root spans with the span id
+  (`profile_id`) and stamps spans with `pyroscope.profile.id`, linking traces
+  to profiles ("Flame graph" tab on a span; uses the Tempo datasource's
+  traces-to-profiles link, preconfigured in Grafana Cloud). Profiles are pushed
+  to Alloy (`pyroscope.receive_http` on `alloy:9999`) and forwarded to Grafana
+  Cloud Profiles (`GCLOUD_PYROSCOPE_*` in `.env`).
+  `PYROSCOPE_APPLICATION_NAME` matches the OTel service name so profiles and
+  traces correlate on `service_name`.
 - All telemetry flows through **Grafana Alloy** ([`alloy/config.alloy`](alloy/config.alloy))
-  to Grafana Cloud (Tempo / Prometheus / Loki).
+  to Grafana Cloud (Tempo / Prometheus / Loki / Pyroscope).
 
 ## HTTP API contract & database schema
 
@@ -65,7 +84,7 @@ docker-compose/
 ├── frontend/                 # React + Vite + Faro, served by nginx
 └── services/                 # shared build context, one Gemfile
     ├── Gemfile
-    ├── common/               # otel.rb, db.rb, sqlcommenter.rb (Sequel extension)
+    ├── common/               # otel.rb, profiling.rb, db.rb, sqlcommenter.rb (Sequel extension)
     ├── products/             # Sinatra + Sequel → MySQL
     ├── checkout/             # Sinatra + Sequel → MySQL, calls shipping (Faraday)
     └── shipping/             # Sinatra + Sequel → PostgreSQL

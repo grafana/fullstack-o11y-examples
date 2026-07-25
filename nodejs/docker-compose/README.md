@@ -22,8 +22,10 @@ docker compose up --build     # first run seeds both databases
 | MySQL                      | localhost:3306 |
 | PostgreSQL                 | localhost:5432 |
 
-Telemetry works without Grafana Cloud credentials (export just fails silently);
-fill in `.env` to see traces. Faro is disabled until `VITE_FARO_*` are set.
+Telemetry works without Grafana Cloud credentials, though export fails — and
+with profiling the failure is noisy: Alloy logs profile upload errors every
+~10s until `GCLOUD_PYROSCOPE_*` are set. Fill in `.env` to see
+traces/profiles. Faro is disabled until `VITE_FARO_*` are set.
 
 ## Observability
 
@@ -42,8 +44,24 @@ fill in `.env` to see traces. Faro is disabled until `VITE_FARO_*` are set.
   so `instrumentation-http` injects the traceparent header. A checkout therefore
   produces one distributed trace: **browser (Faro) → checkout → MySQL** and
   **→ shipping → PostgreSQL**.
+- **Continuous profiling (Pyroscope)**: each service starts the
+  [Pyroscope Node.js SDK](https://grafana.com/docs/pyroscope/latest/configure-client/language-sdks/nodejs/)
+  (`@pyroscope/nodejs`) from [`services/common/profiling.js`](services/common/profiling.js),
+  called by the same `common/otel.js` bootstrap. The SDK captures wall-clock
+  (with CPU time, `collectCpuTime: true`) and heap-allocation profiles and
+  pushes them to Alloy (`pyroscope.receive_http` on `alloy:9999`), which
+  forwards them to Grafana Cloud Profiles (`GCLOUD_PYROSCOPE_*` in `.env`).
+  Profiling is only *enabled* via `PYROSCOPE_SERVER_ADDRESS` in
+  `docker-compose.yml` (`x-pyroscope-env`) — when it is unset the bootstrap
+  logs one line and skips, so consumers of the same images that don't
+  configure profiling (e.g. [`../k8s`](../k8s)) are unaffected.
+  `PYROSCOPE_APPLICATION_NAME` matches `OTEL_SERVICE_NAME` so profiles and
+  traces correlate on `service_name`. Span profiles (trace→profile flame
+  graphs on a span) are **not** wired up: there is no published Pyroscope OTel
+  integration for Node.js (`@pyroscope/otel` is not on npm; Grafana documents
+  span profiles for Go/Java/Ruby/.NET/Python only).
 - All telemetry flows through **Grafana Alloy** ([`alloy/config.alloy`](alloy/config.alloy))
-  to Grafana Cloud (Tempo / Prometheus / Loki).
+  to Grafana Cloud (Tempo / Prometheus / Loki / Pyroscope).
 
 ## HTTP API contract & database schema
 
@@ -77,8 +95,9 @@ docker-compose/
 ├── databases/{mysql,postgres}/init.sql
 ├── frontend/                # React + Vite + Faro, served by nginx
 └── services/                # single npm workspace, shared build context
-    ├── package.json         # all deps (express, mysql2, pg, OTel)
+    ├── package.json         # all deps (express, mysql2, pg, OTel, Pyroscope)
     ├── common/otel.js       # OTel SDK + SQLCommenter bootstrap
+    ├── common/profiling.js  # Pyroscope continuous profiling (opt-in, no-op if unconfigured)
     ├── products/            # Express → MySQL
     ├── checkout/            # Express → MySQL, calls shipping
     └── shipping/            # Express → PostgreSQL
