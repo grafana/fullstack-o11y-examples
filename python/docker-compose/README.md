@@ -38,6 +38,9 @@ fill in `.env` to see traces/metrics/logs. Faro is disabled until
   [Pyroscope Python SDK](https://grafana.com/docs/pyroscope/latest/configure-client/language-sdks/python/)
   (`pyroscope-io`, a py-spy-derived in-process sampling CPU profiler) in
   [`services/common/pyroscope_setup.py`](services/common/pyroscope_setup.py).
+  Both gunicorn workers run the sampler and push under the same application
+  name; Pyroscope aggregates them server-side, so flame graphs show the
+  service, not individual processes.
   Profiling is opt-in via `PYROSCOPE_SERVER_ADDRESS` in `docker-compose.yml`
   (`x-pyroscope-env`); when it is unset the init logs one line and does nothing,
   so consumers of the same images that don't configure profiling (e.g.

@@ -6,6 +6,7 @@ strictly opt-in: when ``PYROSCOPE_SERVER_ADDRESS`` is unset or empty this module
 logs one line and does nothing, so other consumers of the same images that don't
 configure profiling (e.g. python/k8s) are unaffected.
 """
+import atexit
 import logging
 import os
 
@@ -40,4 +41,6 @@ def configure_profiling(service_name: str) -> bool:
         server_address=server_address,
         tags=_parse_labels(),
     )
+    # Flush the in-flight profile when the worker exits.
+    atexit.register(pyroscope.shutdown)
     return True

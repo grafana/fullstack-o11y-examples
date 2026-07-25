@@ -19,11 +19,13 @@ function parseLabels() {
   return tags;
 }
 
+// Returns a stop function (a resolved no-op when profiling is disabled) so the
+// caller can flush the in-flight profile on shutdown.
 function startProfiling(serviceName) {
   const serverAddress = process.env.PYROSCOPE_SERVER_ADDRESS;
   if (!serverAddress) {
     console.log('pyroscope profiling disabled (PYROSCOPE_SERVER_ADDRESS not set)');
-    return;
+    return () => Promise.resolve();
   }
 
   // Required lazily so disabled runs never load the SDK (native pprof addon).
@@ -36,6 +38,7 @@ function startProfiling(serviceName) {
     wall: { collectCpuTime: true },
   });
   Pyroscope.start(); // wall/CPU + heap profilers
+  return () => Pyroscope.stop();
 }
 
 module.exports = { startProfiling };

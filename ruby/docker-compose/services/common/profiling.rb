@@ -30,6 +30,8 @@ module Common
         c.server_address   = server
         c.tags             = parse_labels
       end
+      # Flush the in-flight profile when the service exits.
+      at_exit { Pyroscope.shutdown }
     end
 
     # Span profiles: label profiles recorded during local root spans with the

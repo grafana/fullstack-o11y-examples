@@ -38,8 +38,8 @@ const sdk = new NodeSDK({
 sdk.start();
 
 // Continuous profiling (Pyroscope) — a no-op unless PYROSCOPE_SERVER_ADDRESS is set.
-startProfiling(serviceName);
+const stopProfiling = startProfiling(serviceName);
 
 process.on('SIGTERM', () => {
-  sdk.shutdown().finally(() => process.exit(0));
+  Promise.allSettled([sdk.shutdown(), stopProfiling()]).finally(() => process.exit(0));
 });
