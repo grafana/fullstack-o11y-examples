@@ -7,6 +7,7 @@ name: bookstore-o11y-go
 # same Dockerfiles (go/k8s) opt in explicitly.
 x-pyroscope-env: &pyroscope_env
   PYROSCOPE_SERVER_ADDRESS: http://alloy:9999
+  PYROSCOPE_LABELS: namespace=bookstore
 
 services:
   mysql:

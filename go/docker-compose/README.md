@@ -42,7 +42,8 @@ fill in `.env` to see traces/metrics. Faro is disabled until `VITE_FARO_*` are s
   [pyroscope-go](https://github.com/grafana/pyroscope-go) SDK from
   [`services/common/pyroscope.go`](services/common/pyroscope.go), capturing
   CPU, allocation (objects/space), in-use heap (objects/space), and goroutine
-  profiles tagged `service_namespace=bookstore`. Profiling only activates when
+  profiles tagged from `PYROSCOPE_LABELS` (`namespace=bookstore`). Profiling
+  only activates when
   `PYROSCOPE_SERVER_ADDRESS` is set — done in `docker-compose.yml`
   (`x-pyroscope-env`), so consumers of the same images that don't configure
   profiling (e.g. [`../k8s`](../k8s)) just log one line and skip it. When

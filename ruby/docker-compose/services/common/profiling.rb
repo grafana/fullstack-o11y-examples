@@ -7,6 +7,15 @@
 # for linux) and pushes pprof profiles to the configured server.
 module Common
   module Profiling
+    # Parse PYROSCOPE_LABELS ("k=v,k2=v2", the Pyroscope Java agent's format) so
+    # labels come from docker-compose.yml instead of being hardcoded here.
+    def self.parse_labels
+      ENV["PYROSCOPE_LABELS"].to_s.split(",").each_with_object({}) do |pair, tags|
+        key, sep, value = pair.strip.partition("=")
+        tags[key] = value unless sep.empty? || key.empty?
+      end
+    end
+
     # Start the Pyroscope agent, keyed by PYROSCOPE_APPLICATION_NAME (must match
     # the OTel service name so profiles correlate with traces on service_name).
     def self.configure(service_name)
@@ -19,7 +28,7 @@ module Common
       Pyroscope.configure do |c|
         c.application_name = ENV.fetch("PYROSCOPE_APPLICATION_NAME", service_name)
         c.server_address   = server
-        c.tags             = { "service_namespace" => "bookstore" }
+        c.tags             = parse_labels
       end
     end
 

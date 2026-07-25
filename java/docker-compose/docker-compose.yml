@@ -12,7 +12,7 @@ x-pyroscope-env: &pyroscope_env
   PYROSCOPE_PROFILER_EVENT: itimer
   PYROSCOPE_PROFILER_ALLOC: 512k
   PYROSCOPE_PROFILER_LOCK: 10ms
-  PYROSCOPE_LABELS: service_namespace=bookstore
+  PYROSCOPE_LABELS: namespace=bookstore
 
 services:
   mysql:

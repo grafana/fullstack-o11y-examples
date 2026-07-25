@@ -8,6 +8,17 @@
 // and does nothing, so other consumers of the images are unaffected.
 'use strict';
 
+// PYROSCOPE_LABELS uses the Pyroscope Java agent's "k=v,k2=v2" format so every
+// stack shares one compose-level convention instead of hardcoding tags here.
+function parseLabels() {
+  const tags = {};
+  for (const pair of (process.env.PYROSCOPE_LABELS || '').split(',')) {
+    const [key, ...rest] = pair.trim().split('=');
+    if (key && rest.length) tags[key] = rest.join('=');
+  }
+  return tags;
+}
+
 function startProfiling(serviceName) {
   const serverAddress = process.env.PYROSCOPE_SERVER_ADDRESS;
   if (!serverAddress) {
@@ -20,9 +31,7 @@ function startProfiling(serviceName) {
   Pyroscope.init({
     serverAddress,
     appName: process.env.PYROSCOPE_APPLICATION_NAME || serviceName,
-    // Same namespace as OTEL_RESOURCE_ATTRIBUTES (service.namespace=bookstore)
-    // so profiles group with the rest of the services' telemetry.
-    tags: { service_namespace: 'bookstore' },
+    tags: parseLabels(),
     // Record CPU time alongside wall time so both profile types are available.
     wall: { collectCpuTime: true },
   });

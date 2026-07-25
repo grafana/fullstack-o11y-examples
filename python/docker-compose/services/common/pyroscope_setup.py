@@ -12,6 +12,17 @@ import os
 logger = logging.getLogger(__name__)
 
 
+def _parse_labels() -> dict:
+    """Parse PYROSCOPE_LABELS ("k=v,k2=v2", the Pyroscope Java agent's format)
+    so labels come from docker-compose.yml instead of being hardcoded here."""
+    tags = {}
+    for pair in os.environ.get("PYROSCOPE_LABELS", "").split(","):
+        key, sep, value = pair.strip().partition("=")
+        if sep and key:
+            tags[key] = value
+    return tags
+
+
 def configure_profiling(service_name: str) -> bool:
     """Start the Pyroscope sampler; returns True only when profiling is enabled."""
     server_address = os.environ.get("PYROSCOPE_SERVER_ADDRESS", "")
@@ -27,6 +38,6 @@ def configure_profiling(service_name: str) -> bool:
     pyroscope.configure(
         application_name=os.environ.get("PYROSCOPE_APPLICATION_NAME", service_name),
         server_address=server_address,
-        tags={"service_namespace": "bookstore"},
+        tags=_parse_labels(),
     )
     return True

@@ -3,9 +3,23 @@ package common
 import (
 	"log"
 	"os"
+	"strings"
 
 	"github.com/grafana/pyroscope-go"
 )
+
+// parseLabels turns PYROSCOPE_LABELS ("k=v,k2=v2" — the same format the
+// Pyroscope Java agent reads) into profile tags, so labels are set in
+// docker-compose.yml rather than hardcoded here.
+func parseLabels() map[string]string {
+	tags := map[string]string{}
+	for _, pair := range strings.Split(os.Getenv("PYROSCOPE_LABELS"), ",") {
+		if k, v, ok := strings.Cut(strings.TrimSpace(pair), "="); ok && k != "" {
+			tags[k] = v
+		}
+	}
+	return tags
+}
 
 // initProfiling starts the Pyroscope continuous profiler, pushing CPU,
 // allocation, in-use heap, and goroutine profiles to PYROSCOPE_SERVER_ADDRESS
@@ -27,7 +41,7 @@ func initProfiling(serviceName string) (func() error, bool) {
 	profiler, err := pyroscope.Start(pyroscope.Config{
 		ApplicationName: name,
 		ServerAddress:   addr,
-		Tags:            map[string]string{"service_namespace": "bookstore"},
+		Tags:            parseLabels(),
 		ProfileTypes: []pyroscope.ProfileType{
 			pyroscope.ProfileCPU,
 			pyroscope.ProfileAllocObjects,
