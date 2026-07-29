@@ -75,8 +75,12 @@ async function flushFaro(page, flushWait) {
       /* best-effort — force-flush is not always exposed via the API provider */
     }
     try {
+      // Nudge both lifecycle events Faro transports may flush on — we can't be
+      // sure which the deployed build listens on (visibilitychange, pagehide,
+      // or both), so fire both.
       Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
       document.dispatchEvent(new Event('visibilitychange'));
+      window.dispatchEvent(new Event('pagehide'));
     } catch (_e) {
       /* best-effort */
     }
@@ -87,9 +91,20 @@ async function flushFaro(page, flushWait) {
 // ── 1. Log in ─────────────────────────────────────────────────────────────
 // Mock login: select a seeded customer (id 1–10) and submit — no password.
 // Vary the customer per VU/iteration so the backends see different queries.
-async function stepLogin(page, base) {
+async function stepLogin(page, base, expectFaro) {
   await page.goto(`${base}/login`, { waitUntil: 'networkidle' });
   await page.waitForSelector('.login-card', { state: 'visible', timeout: 15000 });
+
+  // When Faro capture is expected, hard-fail if the Web SDK didn't initialize
+  // (failed to load, wrong build, CSP-blocked, collector URL unset) — otherwise
+  // flushFaro's optional-chained no-op would pass silently and you'd only notice
+  // missing data in Frontend Observability days later. Gated by expectFaro
+  // because Faro is optional here: the frontend leaves window.faro undefined
+  // when VITE_FARO_ENDPOINT is unset (see frontend/src/faro.js).
+  if (expectFaro) {
+    const faroLoaded = await page.evaluate(() => typeof globalThis.faro !== 'undefined');
+    check(faroLoaded, { 'faro: web SDK initialized on page': (v) => v === true });
+  }
 
   const customerId = String(((__VU - 1 + __ITER) % 10) + 1);
   await page.locator('.login-card select').selectOption(customerId);
@@ -165,11 +180,11 @@ async function stepLogout(page) {
 }
 
 // runJourney executes one full storefront journey in a fresh browser page.
-// opts: { base, injectErrors, flushWait }.
-export async function runJourney({ base, injectErrors, flushWait }) {
+// opts: { base, injectErrors, flushWait, expectFaro }.
+export async function runJourney({ base, injectErrors, flushWait, expectFaro }) {
   const page = await browser.newPage();
   try {
-    await stepLogin(page, base);
+    await stepLogin(page, base, expectFaro);
     if (injectErrors) injectPgError(base);
     await stepAddToCart(page);
     await stepCheckout(page);

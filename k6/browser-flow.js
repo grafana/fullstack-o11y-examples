@@ -38,5 +38,8 @@ export default async function () {
     base: BASE,
     injectErrors: __ENV.INJECT_ERRORS === '1' || __ENV.INJECT_ERRORS === 'true',
     flushWait: Number(__ENV.FLUSH_WAIT) || 8,
+    // Faro is optional for local runs — opt in with EXPECT_FARO=1 to hard-fail
+    // if the frontend's Faro SDK didn't initialize.
+    expectFaro: __ENV.EXPECT_FARO === '1' || __ENV.EXPECT_FARO === 'true',
   });
 }

@@ -79,6 +79,7 @@ K6_BROWSER_HEADLESS=false k6 run k6/browser-flow.js
 | `ITERATIONS`  | `10`                 | Total journeys across all VUs    |
 | `MAX_DURATION`| `10m`                | Hard cap on the scenario         |
 | `FLUSH_WAIT`  | `8`                  | Seconds to dwell after logout so Faro flushes its batched activities/traces before the page closes |
+| `EXPECT_FARO` | *(off)*              | `1` to hard-fail a run if the frontend's Faro SDK didn't initialize (off by default since Faro is optional locally) |
 
 > Each VU is a full browser — browser tests are heavy, so scale `VUS` with an eye
 > on local CPU/RAM rather than pushing it like a protocol-level test.
@@ -161,6 +162,7 @@ reference.
 | `K6_LOAD_ZONE`  | *(Cloud default)*                | Load zone, e.g. `amazon:us:ashburn` |
 | `INJECT_ERRORS` | *(off)*                          | Also inject a PostgreSQL error per iteration (see below) |
 | `FLUSH_WAIT`    | `8`                              | Seconds to dwell so Faro flushes before the page closes |
+| `EXPECT_FARO`   | *(on)*                           | Hard-fail (via the `checks>0.90` threshold) if the frontend's Faro SDK didn't initialize; set `0` to run without requiring Faro |
 
 ### Data growth on long-running schedules
 

@@ -71,5 +71,9 @@ export default async function () {
     base: BASE,
     injectErrors: __ENV.INJECT_ERRORS === '1' || __ENV.INJECT_ERRORS === 'true',
     flushWait: Number(__ENV.FLUSH_WAIT) || 8,
+    // Frontend telemetry capture is the point of the scheduled cloud runs, so
+    // hard-fail (via the checks threshold) if Faro didn't initialize. Set
+    // EXPECT_FARO=0 to run continuous load without requiring Faro.
+    expectFaro: __ENV.EXPECT_FARO !== '0' && __ENV.EXPECT_FARO !== 'false',
   });
 }
