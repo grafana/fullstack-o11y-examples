@@ -39,8 +39,14 @@ kubectl -n bookstore port-forward svc/frontend 8080:80   # http://localhost:8080
 
 - Each backend container sets `OTEL_SERVICE_NAME` (products-service /
   checkout-service / shipping-service) so the OpenTelemetry Java agent tags spans
-  with the right service name; `OTEL_EXPORTER_OTLP_ENDPOINT` and
-  `OTEL_RESOURCE_ATTRIBUTES` come from the shared `bookstore-config` ConfigMap.
+  with the right service name; `OTEL_EXPORTER_OTLP_ENDPOINT`,
+  `OTEL_RESOURCE_ATTRIBUTES`, and
+  `OTEL_INSTRUMENTATION_COMMON_DB_STATEMENT_SANITIZER_ENABLED` come from the shared
+  `bookstore-config` ConfigMap.
+- `OTEL_INSTRUMENTATION_COMMON_DB_STATEMENT_SANITIZER_ENABLED=false` disables the
+  agent's default `db.statement` sanitization so the full SQLCommenter comment
+  (real `traceparent`) stays in the span, enabling Database Observability's exact
+  trace-id/span-id match (see [docs/sqlcommenter-dbo11y.md](../../docs/sqlcommenter-dbo11y.md)).
 - The `bookstore` namespace matches the Python reference, so deploy **one
   language at a time** into a cluster (or edit the namespace to run side by side).
 - `mysql/configmap-init.yaml`, `postgres/configmap-init.yaml`, and
