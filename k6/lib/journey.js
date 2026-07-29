@@ -95,14 +95,19 @@ async function stepLogin(page, base, expectFaro) {
   await page.goto(`${base}/login`, { waitUntil: 'networkidle' });
   await page.waitForSelector('.login-card', { state: 'visible', timeout: 15000 });
 
-  // When Faro capture is expected, hard-fail if the Web SDK didn't initialize
-  // (failed to load, wrong build, CSP-blocked, collector URL unset) — otherwise
-  // flushFaro's optional-chained no-op would pass silently and you'd only notice
-  // missing data in Frontend Observability days later. Gated by expectFaro
-  // because Faro is optional here: the frontend leaves window.faro undefined
-  // when VITE_FARO_ENDPOINT is unset (see frontend/src/faro.js).
+  // Detect whether the frontend's Faro Web SDK initialized (the frontend leaves
+  // window.faro undefined when VITE_FARO_ENDPOINT is unset — see
+  // frontend/src/faro.js). Always log when it's missing, so a run that captures
+  // no frontend telemetry says so instead of failing silently in flushFaro; and
+  // when the run expects Faro, additionally hard-fail via a check.
+  const faroLoaded = await page.evaluate(() => typeof globalThis.faro !== 'undefined');
+  if (!faroLoaded) {
+    console.log(
+      `[faro] Web SDK did not initialize on ${base} — no frontend telemetry will ` +
+        `be captured (VITE_FARO_ENDPOINT unset, wrong build, CSP, or unreachable collector).`,
+    );
+  }
   if (expectFaro) {
-    const faroLoaded = await page.evaluate(() => typeof globalThis.faro !== 'undefined');
     check(faroLoaded, { 'faro: web SDK initialized on page': (v) => v === true });
   }
 
