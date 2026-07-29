@@ -131,9 +131,9 @@ Iterate faster with local execution that still streams results to Grafana Cloud:
 k6 cloud run --local-execution -e BASE_URL=http://localhost:8080 k6/continuous-browser-load.js
 ```
 
-### 3. Set up the recurring schedule (UI)
+### 3. Set up the recurring schedule
 
-Scheduling is UI-only in Grafana Cloud k6:
+This section documents the **UI** path:
 
 1. **Testing & synthetics → Performance → Projects**
 2. Open the project, select the **bookstore-continuous-browser** test
@@ -142,6 +142,12 @@ Scheduling is UI-only in Grafana Cloud k6:
 4. **Add schedule**
 
 > Schedules are stored in **UTC** and don't adjust for DST.
+
+For automation (GitOps/CI), Grafana Cloud k6 also exposes a **Schedules REST API**
+(`GET`/`POST https://api.k6.io/cloud/v6/load_tests/{id}/schedule`, auth via
+`Authorization: Bearer <token>` + `X-Stack-Id`) — see the
+[Cloud REST API › Schedules](https://grafana.com/docs/grafana-cloud/testing/k6/reference/cloud-rest-api/schedules/)
+reference.
 
 ### Options (env vars)
 
@@ -155,6 +161,28 @@ Scheduling is UI-only in Grafana Cloud k6:
 | `K6_LOAD_ZONE`  | *(Cloud default)*                | Load zone, e.g. `amazon:us:ashburn` |
 | `INJECT_ERRORS` | *(off)*                          | Also inject a PostgreSQL error per iteration (see below) |
 | `FLUSH_WAIT`    | `8`                              | Seconds to dwell so Faro flushes before the page closes |
+
+### Data growth on long-running schedules
+
+Every journey places a **real order**, and the `/orders` page then loads a
+customer's *entire* order history and fans out one shipping lookup per order
+before the warehouse column resolves. Over days of hourly runs the 10 seeded
+customers accumulate orders, so the order-review step does progressively more
+work and the per-run load stops being flat. Two mitigations:
+
+- **In the script** (already done): the warehouse assertion uses a bounded
+  `waitForFunction` poll rather than a fixed sleep, so step 4 stays reliable as
+  histories grow (it no longer races a fixed 2s wait against N shipping fetches).
+- **Reset the seed data periodically** to keep the load profile steady — for the
+  docker-compose stacks, recreate the databases (which re-run the seed scripts):
+
+  ```bash
+  cd <stack>/docker-compose
+  docker compose down -v && docker compose up -d --build   # -v drops the DB volumes
+  ```
+
+  Schedule this (e.g. weekly) alongside the k6 schedule for a demo environment
+  that's meant to run unattended.
 
 ## Populate the DB o11y "PostgreSQL errors" panel (`INJECT_ERRORS`)
 

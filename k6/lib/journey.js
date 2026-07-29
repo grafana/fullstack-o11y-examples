@@ -84,78 +84,97 @@ async function flushFaro(page, flushWait) {
   sleep(flushWait);
 }
 
+// ── 1. Log in ─────────────────────────────────────────────────────────────
+// Mock login: select a seeded customer (id 1–10) and submit — no password.
+// Vary the customer per VU/iteration so the backends see different queries.
+async function stepLogin(page, base) {
+  await page.goto(`${base}/login`, { waitUntil: 'networkidle' });
+  await page.waitForSelector('.login-card', { state: 'visible', timeout: 15000 });
+
+  const customerId = String(((__VU - 1 + __ITER) % 10) + 1);
+  await page.locator('.login-card select').selectOption(customerId);
+  await page.locator('.login-card button[type="submit"]').click();
+
+  // Login navigates to /books; wait for the catalog to render.
+  await page.waitForSelector('.book-card', { state: 'visible', timeout: 20000 });
+  const onBooks = await page.locator('.nav a[href="/books"]').isVisible();
+  check(onBooks, { '1. logged in — catalog visible': (v) => v === true });
+  sleep(1);
+}
+
+// ── 2. Add a book to the cart ───────────────────────────────────────────────
+async function stepAddToCart(page) {
+  // Pick a random in-stock book (out-of-stock buttons are disabled).
+  const addButtons = await page.$$('.book-card button:not([disabled])');
+  check(addButtons, { '2a. in-stock books available': (b) => b.length > 0 });
+  const addBtn = addButtons[Math.floor(Math.random() * addButtons.length)];
+  await addBtn.click();
+
+  // The nav cart badge ("Cart 🛒 N") should now show a positive count.
+  const cartLabel = await page.locator('.nav a[href="/cart"]').textContent();
+  check(cartLabel, { '2b. book added to cart': (t) => /🛒\s*[1-9]/.test(t) });
+  sleep(1);
+}
+
+// ── 3. Go to the cart and check out ─────────────────────────────────────────
+async function stepCheckout(page) {
+  await page.locator('.nav a[href="/cart"]').click();
+  await page.waitForSelector('.cart-page .btn-primary', { state: 'visible', timeout: 10000 });
+  await page.locator('.cart-page button.btn-primary').click(); // "Pay $X.XX"
+
+  // Checkout POSTs to /api/checkout; success swaps in the confirmation view.
+  await page.waitForSelector('.confirmation', { state: 'visible', timeout: 20000 });
+  const confirmText = await page.locator('.confirmation h2').textContent();
+  check(confirmText, { '3. order confirmed': (t) => t.includes('Order confirmed') });
+  sleep(1);
+}
+
+// ── 4. Review orders (warehouse location comes from Postgres shipments) ──────
+async function stepReviewOrders(page) {
+  await page.locator('.nav a[href="/orders"]').click();
+  // Seeded customers always have prior orders, plus the one just placed.
+  await page.waitForSelector('.orders-table tbody tr', { state: 'visible', timeout: 20000 });
+  const orderRows = await page.$$('.orders-table tbody tr');
+  check(orderRows, { '4a. orders listed': (r) => r.length >= 1 });
+
+  // The Warehouse column (6th cell) is filled per-order from the Postgres
+  // shipments table (via the shipping service). Wait — bounded, not a fixed
+  // sleep — until at least one cell resolves to a real "Name — City, State"
+  // label (contains a comma) rather than the "…"/"—" placeholder. A bounded
+  // poll keeps this step steady even as a customer's order history grows over
+  // long scheduled runs (see the README note on resetting seed data); a fixed
+  // sleep would get flaky as /orders fans out more per-order shipping fetches.
+  const warehouseResolved = await page
+    .waitForFunction(
+      "Array.from(document.querySelectorAll('.orders-table tbody tr td:nth-child(6)'))" +
+        ".some((c) => c.textContent.includes(','))",
+      { polling: 500, timeout: 15000 },
+    )
+    .then(() => true)
+    .catch(() => false);
+  check(warehouseResolved, { '4b. warehouse location shown from Postgres': (v) => v === true });
+  sleep(1);
+}
+
+// ── 5. Log out ──────────────────────────────────────────────────────────────
+async function stepLogout(page) {
+  await page.locator('.user button').click(); // "Log out"
+  await page.waitForSelector('.login-card', { state: 'visible', timeout: 10000 });
+  const backToLogin = await page.locator('.login-card').isVisible();
+  check(backToLogin, { '5. logged out — back to login': (v) => v === true });
+}
+
 // runJourney executes one full storefront journey in a fresh browser page.
 // opts: { base, injectErrors, flushWait }.
 export async function runJourney({ base, injectErrors, flushWait }) {
   const page = await browser.newPage();
   try {
-    // ── 1. Log in ─────────────────────────────────────────────────────────
-    // Mock login: select a seeded customer (id 1–10) and submit — no password.
-    // Vary the customer per VU/iteration so the backends see different queries.
-    await page.goto(`${base}/login`, { waitUntil: 'networkidle' });
-    await page.waitForSelector('.login-card', { state: 'visible', timeout: 15000 });
-
-    const customerId = String(((__VU - 1 + __ITER) % 10) + 1);
-    await page.locator('.login-card select').selectOption(customerId);
-    await page.locator('.login-card button[type="submit"]').click();
-
-    // Login navigates to /books; wait for the catalog to render.
-    await page.waitForSelector('.book-card', { state: 'visible', timeout: 20000 });
-    const onBooks = await page.locator('.nav a[href="/books"]').isVisible();
-    check(onBooks, { '1. logged in — catalog visible': (v) => v === true });
-    sleep(1);
-
+    await stepLogin(page, base);
     if (injectErrors) injectPgError(base);
-
-    // ── 2. Add a book to the cart ─────────────────────────────────────────
-    // Pick a random in-stock book (out-of-stock buttons are disabled).
-    const addButtons = await page.$$('.book-card button:not([disabled])');
-    check(addButtons, { '2a. in-stock books available': (b) => b.length > 0 });
-    const addBtn = addButtons[Math.floor(Math.random() * addButtons.length)];
-    await addBtn.click();
-
-    // The nav cart badge ("Cart 🛒 N") should now show a positive count.
-    const cartLabel = await page.locator('.nav a[href="/cart"]').textContent();
-    check(cartLabel, { '2b. book added to cart': (t) => /🛒\s*[1-9]/.test(t) });
-    sleep(1);
-
-    // ── 3. Go to the cart and check out ───────────────────────────────────
-    await page.locator('.nav a[href="/cart"]').click();
-    await page.waitForSelector('.cart-page .btn-primary', { state: 'visible', timeout: 10000 });
-    await page.locator('.cart-page button.btn-primary').click(); // "Pay $X.XX"
-
-    // Checkout POSTs to /api/checkout; success swaps in the confirmation view.
-    await page.waitForSelector('.confirmation', { state: 'visible', timeout: 20000 });
-    const confirmText = await page.locator('.confirmation h2').textContent();
-    check(confirmText, { '3. order confirmed': (t) => t.includes('Order confirmed') });
-    sleep(1);
-
-    // ── 4. Review orders (with warehouse location from Postgres shipments) ─
-    await page.locator('.nav a[href="/orders"]').click();
-    // Seeded customers always have prior orders, plus the one just placed.
-    await page.waitForSelector('.orders-table tbody tr', { state: 'visible', timeout: 20000 });
-    const orderRows = await page.$$('.orders-table tbody tr');
-    check(orderRows, { '4a. orders listed': (r) => r.length >= 1 });
-
-    // The Warehouse column (6th cell) is filled in per-order from the shipments
-    // table in PostgreSQL (via the shipping service). Let those fetches resolve,
-    // then confirm a real location rendered — not the "…"/"—" placeholder. A real
-    // "Name — City, State" label contains a comma; the placeholders don't.
-    sleep(2);
-    const warehouseCells = await page.$$('.orders-table tbody tr td:nth-child(6)');
-    const warehouseTexts = [];
-    for (const c of warehouseCells) warehouseTexts.push((await c.textContent()).trim());
-    check(warehouseTexts, {
-      '4b. warehouse location shown from Postgres': (t) => t.some((x) => x.includes(',')),
-    });
-    sleep(1);
-
-    // ── 5. Log out ────────────────────────────────────────────────────────
-    await page.locator('.user button').click(); // "Log out"
-    await page.waitForSelector('.login-card', { state: 'visible', timeout: 10000 });
-    const backToLogin = await page.locator('.login-card').isVisible();
-    check(backToLogin, { '5. logged out — back to login': (v) => v === true });
-
+    await stepAddToCart(page);
+    await stepCheckout(page);
+    await stepReviewOrders(page);
+    await stepLogout(page);
     await flushFaro(page, flushWait);
   } finally {
     await page.close();
