@@ -26,6 +26,10 @@ data:
   # and Alloy reads them via sys.env.
   ASSERTS_ENV: "dev"
   ASSERTS_SITE: "dev"
+  # Demo only: keep the SQLCommenter comment visible in db.statement. This is
+  # not required for DBo11y correlation and disables SQL literal redaction.
+  # Shared by all three backends through envFrom bookstore-config.
+  OTEL_INSTRUMENTATION_COMMON_DB_STATEMENT_SANITIZER_ENABLED: "false"
 ---
 # Application credentials. Replace the placeholder values before applying
 # (e.g. `kubectl create secret ... --dry-run=client -o yaml`), or use a sealed-secrets/SOPS workflow.
