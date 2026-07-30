@@ -268,5 +268,7 @@ The comment can only be observed if the server records full statement text:
   trace-id/span-id**. Setting `OTEL_INSTRUMENTATION_COMMON_DB_STATEMENT_SANITIZER_ENABLED=false`
   keeps the real IDs in `db.statement`, enabling that exact match. It does **not** affect
   the **match by query text** — that compares the *normalized* statement, which the
-  sanitizer leaves unchanged either way. This repo's Java services set the flag; see
-  [docker-compose.yml](../java/docker-compose/docker-compose.yml).
+  sanitizer leaves unchanged either way. This repo's Java services set the flag in both
+  deployment modes — see [docker-compose.yml](../java/docker-compose/docker-compose.yml)
+  and, for Kubernetes, the `bookstore-config` ConfigMap in
+  [k8s/00-namespace-config.yaml](../java/k8s/00-namespace-config.yaml).
