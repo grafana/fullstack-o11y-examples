@@ -54,9 +54,12 @@ data:
     }
     
     prometheus.remote_write "grafana_cloud" {
-      // Knowledge Graph (Asserts) site scope; asserts_env comes from the
-      // deployment.environment resource attribute.
+      // Knowledge Graph (Asserts) env + site scope on every remote-written series.
+      // db-o11y exporter metrics carry no OTel resource attributes, so set asserts_env
+      // here too — matching the services' deployment.environment=dev — so DB and app
+      // entities share one env scope and the Service --CONTROLS--> Database link forms.
       external_labels = {
+        asserts_env  = "dev",
         asserts_site = "dev",
       }
       endpoint {
