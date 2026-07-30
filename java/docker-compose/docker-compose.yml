@@ -126,7 +126,12 @@ services:
       # OTel Java agent 2.x defaults to http/protobuf, so use Alloy's OTLP HTTP
       # port (4318), not the gRPC port (4317).
       OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4318
-      OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore
+      # Knowledge Graph (Asserts) scope. service.namespace both builds the job
+      # label "bookstore/<service.name>" and sets the namespace scope;
+      # deployment.environment populates asserts_env. Set explicitly because these
+      # run in docker-compose (not k8s), so env/namespace can't be inferred from
+      # cluster metadata. Inherited by checkout via *mysql_svc_env.
+      OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore,deployment.environment=dev
       OTEL_SERVICE_NAME: products-service
       # Profile streams are keyed by this name (must match OTEL_SERVICE_NAME so
       # profiles correlate with traces); the rest comes from x-pyroscope-env.
@@ -174,7 +179,9 @@ services:
       # OTel Java agent 2.x defaults to http/protobuf, so use Alloy's OTLP HTTP
       # port (4318), not the gRPC port (4317).
       OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4318
-      OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore
+      # KG/Asserts scope (see products): namespace + job "bookstore/<service>",
+      # and deployment.environment → asserts_env.
+      OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore,deployment.environment=dev
       OTEL_SERVICE_NAME: shipping-service
       PYROSCOPE_APPLICATION_NAME: shipping-service
     depends_on:
