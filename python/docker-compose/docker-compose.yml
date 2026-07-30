@@ -119,7 +119,7 @@ services:
       MYSQL_USER: root
       MYSQL_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4317
-      OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore
+      OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore,deployment.environment=dev
       # Profile streams are keyed by this name (must match the OTel service name
       # passed to configure_telemetry so profiles correlate with traces); the
       # server address comes from x-pyroscope-env.
@@ -164,7 +164,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4317
-      OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore
+      OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore,deployment.environment=dev
       PYROSCOPE_APPLICATION_NAME: shipping-service
     depends_on:
       postgres: {condition: service_healthy}

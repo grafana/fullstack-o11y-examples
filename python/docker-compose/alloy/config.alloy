@@ -47,6 +47,12 @@ otelcol.exporter.prometheus "default" {
 }
 
 prometheus.remote_write "grafana_cloud" {
+  // Knowledge Graph (Asserts) site scope: asserts_site has no OTel resource
+  // attribute, so set it as an external label on every remote-written series.
+  // (asserts_env comes from the deployment.environment resource attribute.)
+  external_labels = {
+    asserts_site = "dev",
+  }
   endpoint {
     url = sys.env("GCLOUD_PROMETHEUS_URL")
     basic_auth {

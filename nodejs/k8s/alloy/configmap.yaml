@@ -54,6 +54,11 @@ data:
     }
     
     prometheus.remote_write "grafana_cloud" {
+      // Knowledge Graph (Asserts) site scope; asserts_env comes from the
+      // deployment.environment resource attribute.
+      external_labels = {
+        asserts_site = "dev",
+      }
       endpoint {
         url = sys.env("GCLOUD_PROMETHEUS_URL")
         basic_auth {
