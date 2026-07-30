@@ -161,6 +161,13 @@ loki.relabel "dbo11y_mysql" {
 
 discovery.relabel "dbo11y_mysql" {
   targets = database_observability.mysql.bookstore_mysql.targets
+  // cluster lets the built-in Asserts entity rules (entities_dbo11y.yml /
+  // entities_postgresql.yml) discover the Database entity and the
+  // Service --CONTROLS--> Database relationship with no custom YAML.
+  rule {
+    target_label = "cluster"
+    replacement  = "bookstore-cluster"
+  }
   rule {
     target_label = "job"
     replacement  = "integrations/db-o11y"
@@ -228,6 +235,13 @@ loki.relabel "dbo11y_postgres" {
 
 discovery.relabel "dbo11y_postgres" {
   targets = database_observability.postgres.bookstore_postgres.targets
+  // cluster lets the built-in Asserts entity rules (entities_dbo11y.yml /
+  // entities_postgresql.yml) discover the Database entity and the
+  // Service --CONTROLS--> Database relationship with no custom YAML.
+  rule {
+    target_label = "cluster"
+    replacement  = "bookstore-cluster"
+  }
   rule {
     target_label = "job"
     replacement  = "integrations/db-o11y"
