@@ -1,8 +1,16 @@
 # k6 browser load generation
 
-[`browser-flow.js`](browser-flow.js) drives a full storefront journey through the
-React frontend with a real (headless) browser, exercising the products, checkout,
-and shipping backends — and therefore the SQLCommenter + DB o11y pipelines.
+Two entry points drive the **same** full storefront journey (a real headless
+browser through the React frontend, exercising the products/checkout/shipping
+backends and therefore the SQLCommenter + DB o11y + Faro pipelines). The journey
+itself lives once in [`lib/journey.js`](lib/journey.js); both scripts import it:
+
+- [`browser-flow.js`](browser-flow.js) — **local / one-off** runs. A fixed number
+  of journeys (`shared-iterations`); good for a quick demo or manual burst.
+- [`continuous-browser-load.js`](continuous-browser-load.js) — **continuous load
+  via Grafana Cloud k6.** Holds a steady pool of browser VUs for a bounded window
+  (`constant-vus`), configured for cloud execution + a recurring schedule. See
+  [Continuous load via Grafana Cloud k6](#continuous-load-via-grafana-cloud-k6-scheduled).
 
 Flow per iteration:
 
@@ -71,9 +79,115 @@ K6_BROWSER_HEADLESS=false k6 run k6/browser-flow.js
 | `ITERATIONS`  | `10`                 | Total journeys across all VUs    |
 | `MAX_DURATION`| `10m`                | Hard cap on the scenario         |
 | `FLUSH_WAIT`  | `8`                  | Seconds to dwell after logout so Faro flushes its batched activities/traces before the page closes |
+| `EXPECT_FARO` | *(off)*              | `1` to hard-fail a run if the frontend's Faro SDK didn't initialize (off by default since Faro is optional locally) |
 
 > Each VU is a full browser — browser tests are heavy, so scale `VUS` with an eye
 > on local CPU/RAM rather than pushing it like a protocol-level test.
+
+## Continuous load via Grafana Cloud k6 (scheduled)
+
+[`continuous-browser-load.js`](continuous-browser-load.js) is the same journey
+wired for **Grafana Cloud k6**: it runs a steady pool of browser VUs
+(`constant-vus`) for a bounded `DURATION`, and carries a `cloud` options block so
+it can execute on Grafana Cloud load generators. "Continuous" is achieved by a
+**recurring schedule** — Grafana Cloud k6 schedules run hourly at most, so an
+hourly schedule of a short run keeps journeys (and their backend traces, DB o11y
+activity, and Faro frontend telemetry) trickling in around the clock.
+
+> ⚠️ **Cloud VUs cannot reach `localhost`.** For any cloud-executed or scheduled
+> run, set `BASE_URL` to a publicly reachable host (e.g. your EC2 stack). The
+> `localhost` default is only for local iteration. `setup()` fails fast with a
+> clear message if the target is unreachable.
+>
+> 💸 **Browser VUs cost ~10× protocol VU-hours** in Grafana Cloud. Keep `VUS`
+> small (default `3`) and lean on the schedule frequency for volume.
+
+### 1. Authenticate the k6 CLI
+
+Grab a token from **Testing & synthetics → Performance → Settings → Access**
+(personal or stack token), then either:
+
+```bash
+k6 cloud login --token <TOKEN> --stack https://<your-stack>.grafana.net
+# or per-command:
+export K6_CLOUD_TOKEN=<TOKEN>
+```
+
+### 2. Run it once in the cloud (required before scheduling)
+
+`k6 cloud run` uploads the script and executes it on Grafana Cloud infrastructure.
+A test must have run in the cloud at least once before it can be scheduled.
+
+```bash
+# projectID selects the project; omit to use your default project.
+# The Compose frontend serves plain HTTP on :8080 (k8s exposes HTTP :80), so use
+# http:// — https:// would fail TLS negotiation unless you front the stack with a
+# TLS-terminating proxy, in which case use that proxy's https URL/port instead.
+k6 cloud run \
+  -e BASE_URL=http://<public-host>:8080 \
+  -e K6_PROJECT_ID=<project-id> \
+  k6/continuous-browser-load.js
+```
+
+Iterate faster with local execution that still streams results to Grafana Cloud:
+
+```bash
+k6 cloud run --local-execution -e BASE_URL=http://localhost:8080 k6/continuous-browser-load.js
+```
+
+### 3. Set up the recurring schedule
+
+This section documents the **UI** path:
+
+1. **Testing & synthetics → Performance → Projects**
+2. Open the project, select the **bookstore-continuous-browser** test
+3. **Set up a schedule** → choose **Hourly** (most frequent) for near-continuous
+   load; set a start time and, optionally, an end date / run count
+4. **Add schedule**
+
+> Schedules are stored in **UTC** and don't adjust for DST.
+
+For automation (GitOps/CI), Grafana Cloud k6 also exposes a **Schedules REST API**
+(`GET`/`POST https://api.k6.io/cloud/v6/load_tests/{id}/schedule`, auth via
+`Authorization: Bearer <token>` + `X-Stack-Id`) — see the
+[Cloud REST API › Schedules](https://grafana.com/docs/grafana-cloud/testing/k6/reference/cloud-rest-api/schedules/)
+reference.
+
+### Options (env vars)
+
+| Var             | Default                          | Meaning |
+| --------------- | -------------------------------- | ------- |
+| `BASE_URL`      | `http://localhost:8080`          | Frontend base URL (**must be public for cloud runs**) |
+| `VUS`           | `3`                              | Concurrent browser VUs held for the window |
+| `DURATION`      | `5m`                             | How long each run drives load |
+| `K6_PROJECT_ID` | *(default project)*              | Grafana Cloud k6 project ID for the run/schedule |
+| `K6_TEST_NAME`  | `bookstore-continuous-browser`   | Test name shown/grouped in the k6 Cloud UI |
+| `K6_LOAD_ZONE`  | *(Cloud default)*                | Load zone, e.g. `amazon:us:ashburn` |
+| `INJECT_ERRORS` | *(off)*                          | Also inject a PostgreSQL error per iteration (see below) |
+| `FLUSH_WAIT`    | `8`                              | Seconds to dwell so Faro flushes before the page closes |
+| `EXPECT_FARO`   | *(on)*                           | Hard-fail (via the `checks>0.90` threshold) if the frontend's Faro SDK didn't initialize; set `0` to run without requiring Faro |
+
+### Data growth on long-running schedules
+
+Every journey places a **real order**, and the `/orders` page then loads a
+customer's *entire* order history and fans out one shipping lookup per order
+before the warehouse column resolves. Over days of hourly runs the 10 seeded
+customers accumulate orders, so the order-review step does progressively more
+work and the per-run load stops being flat. Two mitigations:
+
+- **In the script** (already done): the warehouse assertion uses a bounded
+  `waitForFunction` poll rather than a fixed sleep, so step 4 stays reliable as
+  histories grow (it no longer races a fixed 2s wait against N shipping fetches).
+- **Reset the seed data periodically** to keep the load profile steady — for the
+  docker-compose stacks, recreate the databases (which re-run the seed scripts):
+
+  ```bash
+  cd <stack>/docker-compose
+  docker compose down -v && docker compose up -d --build   # -v drops the DB volumes
+  ```
+
+  Schedule this (e.g. weekly) alongside the k6 schedule for a demo environment
+  that's meant to run unattended.
 
 ## Populate the DB o11y "PostgreSQL errors" panel (`INJECT_ERRORS`)
 
