@@ -167,11 +167,11 @@ data:
       }
       rule {
         target_label = "asserts_env"
-        replacement  = "dev"
+        replacement  = sys.env("ASSERTS_ENV")
       }
       rule {
         target_label = "asserts_site"
-        replacement  = "dev"
+        replacement  = sys.env("ASSERTS_SITE")
       }
       rule {
         target_label = "job"
@@ -268,11 +268,11 @@ data:
       }
       rule {
         target_label = "asserts_env"
-        replacement  = "dev"
+        replacement  = sys.env("ASSERTS_ENV")
       }
       rule {
         target_label = "asserts_site"
-        replacement  = "dev"
+        replacement  = sys.env("ASSERTS_SITE")
       }
       rule {
         target_label = "job"
