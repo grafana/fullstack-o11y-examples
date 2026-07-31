@@ -26,6 +26,7 @@ export const options = {
   },
   thresholds: {
     checks: ['rate==1.0'], // every step assertion must pass
+    journey_success: ['rate==1.0'], // every iteration must complete (catches thrown journeys)
   },
 };
 

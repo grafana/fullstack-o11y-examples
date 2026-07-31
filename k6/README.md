@@ -120,8 +120,11 @@ A test must have run in the cloud at least once before it can be scheduled.
 
 ```bash
 # projectID selects the project; omit to use your default project.
+# The Compose frontend serves plain HTTP on :8080 (k8s exposes HTTP :80), so use
+# http:// — https:// would fail TLS negotiation unless you front the stack with a
+# TLS-terminating proxy, in which case use that proxy's https URL/port instead.
 k6 cloud run \
-  -e BASE_URL=https://<public-host>:8080 \
+  -e BASE_URL=http://<public-host>:8080 \
   -e K6_PROJECT_ID=<project-id> \
   k6/continuous-browser-load.js
 ```

@@ -14,8 +14,15 @@
 
 import { browser } from 'k6/browser';
 import { check, sleep } from 'k6';
+import { Rate } from 'k6/metrics';
 import http from 'k6/http';
 import exec from 'k6/execution';
+
+// One sample per iteration: true only if the journey ran to completion, false if
+// any browser op threw. The `checks` threshold only counts checks that actually
+// execute, so an exception after an early passing check would otherwise leave a
+// scheduled run green with zero completed journeys. Threshold this in each script.
+export const journeySuccess = new Rate('journey_success');
 
 // preflight runs once (protocol-level — no browser): fail fast with a clear
 // message if the stack isn't reachable, instead of a cryptic per-iteration
@@ -196,6 +203,12 @@ export async function runJourney({ base, injectErrors, flushWait, expectFaro }) 
     await stepReviewOrders(page);
     await stepLogout(page);
     await flushFaro(page, flushWait);
+    journeySuccess.add(true);
+  } catch (e) {
+    // Record the failed iteration for the journey_success threshold, then
+    // re-throw so k6 still logs the underlying browser error.
+    journeySuccess.add(false);
+    throw e;
   } finally {
     await page.close();
   }

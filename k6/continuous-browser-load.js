@@ -12,9 +12,11 @@
 // Cloud execution runs on Grafana Cloud load generators, which CANNOT reach
 // localhost — set BASE_URL to a publicly reachable host (e.g. your EC2 stack)
 // for scheduled/cloud runs. The localhost default is for local iteration only.
+// The stack serves plain HTTP (Compose :8080, k8s :80), so use http:// unless a
+// TLS-terminating proxy fronts it (then use that proxy's https URL).
 //
 // Run in the cloud (uploads + executes on cloud infra):
-//   K6_CLOUD_TOKEN=... k6 cloud run -e BASE_URL=https://<public-host>:8080 k6/continuous-browser-load.js
+//   K6_CLOUD_TOKEN=... k6 cloud run -e BASE_URL=http://<public-host>:8080 k6/continuous-browser-load.js
 // Iterate locally, streaming results to Grafana Cloud k6:
 //   K6_CLOUD_TOKEN=... k6 cloud run --local-execution -e BASE_URL=http://localhost:8080 k6/continuous-browser-load.js
 // Plain local run (no cloud):
@@ -59,6 +61,10 @@ export const options = {
     // doesn't mark the whole scheduled run failed, while still catching real
     // breakage (the journey persistently failing its step checks).
     checks: ['rate>0.90'],
+    // Fraction of iterations that ran to completion. Unlike `checks`, this records
+    // a sample even when a browser op throws, so a scheduled run can't stay green
+    // while most journeys crash before finishing.
+    journey_success: ['rate>0.90'],
   },
 };
 
