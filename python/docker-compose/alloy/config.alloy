@@ -52,7 +52,8 @@ prometheus.remote_write "grafana_cloud" {
   // resource attribute, but the db-o11y exporter metrics carry no OTel resource
   // attributes — setting asserts_env here keeps DB and app entities in one
   // environment scope so their (env-scoped) Service --CONTROLS--> Database
-  // relationship forms. asserts_site (region) has no OTel attribute at all.
+  // relationship forms. asserts_site is set here for the db-o11y exporter metrics;
+  // app telemetry also carries it via OTEL_RESOURCE_ATTRIBUTES (asserts_site=dev).
   external_labels = {
     asserts_env  = "dev",
     asserts_site = "dev",
@@ -72,6 +73,12 @@ otelcol.exporter.loki "default" {
 }
 
 loki.write "grafana_cloud" {
+  // Same KG env/site scope as the metrics remote_write, so db-o11y query-sample
+  // logs (and app logs) match their metrics/entities when filtered by env/site.
+  external_labels = {
+    asserts_env  = "dev",
+    asserts_site = "dev",
+  }
   endpoint {
     url = sys.env("GCLOUD_LOKI_URL")
     basic_auth {
@@ -154,12 +161,18 @@ database_observability.mysql "bookstore_mysql" {
 
 loki.relabel "dbo11y_mysql" {
   forward_to = [loki.write.grafana_cloud.receiver]
-  // Mirror the metrics cluster label onto logs — Database Observability
-  // requires custom label values to match across discovery.relabel and
-  // loki.relabel, or log-backed drilldowns break when filtering by it.
+  // Mirror scope labels onto DB logs for consistent drilldowns.
   rule {
     target_label = "cluster"
     replacement  = "bookstore-cluster"
+  }
+  rule {
+    target_label = "asserts_env"
+    replacement  = "dev"
+  }
+  rule {
+    target_label = "asserts_site"
+    replacement  = "dev"
   }
   rule {
     target_label = "job"
@@ -235,12 +248,18 @@ loki.source.file "postgres_logs" {
 
 loki.relabel "dbo11y_postgres" {
   forward_to = [loki.write.grafana_cloud.receiver]
-  // Mirror the metrics cluster label onto logs — Database Observability
-  // requires custom label values to match across discovery.relabel and
-  // loki.relabel, or log-backed drilldowns break when filtering by it.
+  // Mirror scope labels onto DB logs for consistent drilldowns.
   rule {
     target_label = "cluster"
     replacement  = "bookstore-cluster"
+  }
+  rule {
+    target_label = "asserts_env"
+    replacement  = "dev"
+  }
+  rule {
+    target_label = "asserts_site"
+    replacement  = "dev"
   }
   rule {
     target_label = "job"
