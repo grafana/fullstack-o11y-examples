@@ -168,11 +168,11 @@ loki.relabel "dbo11y_mysql" {
   }
   rule {
     target_label = "asserts_env"
-    replacement  = "dev"
+    replacement  = sys.env("ASSERTS_ENV")
   }
   rule {
     target_label = "asserts_site"
-    replacement  = "dev"
+    replacement  = sys.env("ASSERTS_SITE")
   }
   rule {
     target_label = "job"
@@ -255,11 +255,11 @@ loki.relabel "dbo11y_postgres" {
   }
   rule {
     target_label = "asserts_env"
-    replacement  = "dev"
+    replacement  = sys.env("ASSERTS_ENV")
   }
   rule {
     target_label = "asserts_site"
-    replacement  = "dev"
+    replacement  = sys.env("ASSERTS_SITE")
   }
   rule {
     target_label = "job"
