@@ -53,7 +53,7 @@ prometheus.remote_write "grafana_cloud" {
   // attributes — setting asserts_env here keeps DB and app entities in one
   // environment scope so their (env-scoped) Service --CONTROLS--> Database
   // relationship forms. asserts_site is set here for the db-o11y exporter metrics;
-  // app telemetry also carries it via OTEL_RESOURCE_ATTRIBUTES (asserts_site=dev).
+  // app telemetry also carries it via OTEL_RESOURCE_ATTRIBUTES (defaults to dev).
   external_labels = {
     asserts_env  = sys.env("ASSERTS_ENV"),
     asserts_site = sys.env("ASSERTS_SITE"),
