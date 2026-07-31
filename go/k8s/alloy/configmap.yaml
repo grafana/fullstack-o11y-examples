@@ -44,7 +44,7 @@ data:
       output {
         metrics = [otelcol.exporter.prometheus.default.input]
         logs    = [otelcol.exporter.loki.default.input]
-        traces  = [otelcol.exporter.otlphttp.grafana_cloud.input]
+        traces  = [otelcol.processor.transform.peer_service.input]
       }
     }
     
@@ -94,6 +94,24 @@ data:
     
     // ─── Traces → Grafana Cloud OTLP gateway (otelcol.exporter.otlphttp) ─────────
     // The unified OTLP/HTTP gateway; the exporter appends /v1/traces to the endpoint.
+    otelcol.processor.transform "peer_service" {
+      // Resolve DB client spans to a stable peer.service (bookstore-postgres /
+      // bookstore-mysql) instead of the raw connection host. The OTel Java agent
+      // does this via OTEL_INSTRUMENTATION_COMMON_PEER_SERVICE_MAPPING; these SDKs
+      // have no such option, so map it here from db.system on the trace pipeline.
+      error_mode = "ignore"
+      trace_statements {
+        context = "span"
+        statements = [
+          `set(span.attributes["peer.service"], "bookstore-postgres") where span.attributes["db.system"] == "postgresql"`,
+          `set(span.attributes["peer.service"], "bookstore-mysql") where span.attributes["db.system"] == "mysql"`,
+        ]
+      }
+      output {
+        traces = [otelcol.exporter.otlphttp.grafana_cloud.input]
+      }
+    }
+
     otelcol.exporter.otlphttp "grafana_cloud" {
       client {
         endpoint = sys.env("OTEL_EXPORTER_OTLP_ENDPOINT")

@@ -138,6 +138,7 @@ services:
       # cluster metadata. Inherited by checkout via *mysql_svc_env.
       OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore,deployment.environment=${ASSERTS_ENV:-dev},asserts_site=${ASSERTS_SITE:-dev},service.instance.id=bookstore-products,grafana.host.id=${HOSTNAME:-bookstore-docker}
       OTEL_SERVICE_NAME: products-service
+      OTEL_INSTRUMENTATION_COMMON_PEER_SERVICE_MAPPING: "postgres:5432=bookstore-postgres,mysql:3306=bookstore-mysql"
       # Profile streams are keyed by this name (must match OTEL_SERVICE_NAME so
       # profiles correlate with traces); the rest comes from x-pyroscope-env.
       PYROSCOPE_APPLICATION_NAME: products-service
@@ -189,6 +190,7 @@ services:
       # and deployment.environment → asserts_env.
       OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore,deployment.environment=${ASSERTS_ENV:-dev},asserts_site=${ASSERTS_SITE:-dev},service.instance.id=bookstore-shipping,grafana.host.id=${HOSTNAME:-bookstore-docker}
       OTEL_SERVICE_NAME: shipping-service
+      OTEL_INSTRUMENTATION_COMMON_PEER_SERVICE_MAPPING: "postgres:5432=bookstore-postgres,mysql:3306=bookstore-mysql"
       PYROSCOPE_APPLICATION_NAME: shipping-service
     depends_on:
       postgres: {condition: service_healthy}

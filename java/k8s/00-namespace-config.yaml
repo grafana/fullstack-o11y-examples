@@ -20,6 +20,7 @@ data:
   # OTel Java agent 2.x defaults to http/protobuf, so use Alloy's OTLP HTTP
   # port (4318), not the gRPC port (4317).
   OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4318
+  OTEL_INSTRUMENTATION_COMMON_PEER_SERVICE_MAPPING: "postgres:5432=bookstore-postgres,mysql:3306=bookstore-mysql"
   # Knowledge Graph (Asserts) env/site scope — single source of truth. Backends
   # compose OTEL_RESOURCE_ATTRIBUTES from these via $(VAR) (services/backends.yaml)
   # and Alloy reads them via sys.env.
