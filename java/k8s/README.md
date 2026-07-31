@@ -16,7 +16,7 @@ avoid colliding with the Python images.
    docker build -t <registry>/bookstore-java/checkout:latest services/checkout
    docker build -t <registry>/bookstore-java/shipping:latest services/shipping
    docker build -t <registry>/bookstore-java/frontend:latest \
-     --build-arg VITE_FARO_ENDPOINT=... frontend
+     --build-arg VITE_FARO_ENDPOINT=... --build-arg VITE_ASSERTS_ENV=dev frontend
    docker push <registry>/bookstore-java/{products,checkout,shipping,frontend}:latest
    ```
 

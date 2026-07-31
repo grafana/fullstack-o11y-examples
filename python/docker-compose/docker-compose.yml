@@ -182,6 +182,7 @@ services:
       context: ./frontend
       args:
         VITE_FARO_ENDPOINT: ${VITE_FARO_ENDPOINT:-}
+        VITE_ASSERTS_ENV: ${ASSERTS_ENV:-dev}
     container_name: bookstore-frontend
     ports:
       - "8080:80"

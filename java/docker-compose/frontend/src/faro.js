@@ -29,7 +29,11 @@ if (!url || url.includes("<")) {
 } else {
   initializeFaro({
     url,
-    app: { name: "bookstore-frontend", version: "1.0.0" },
+    app: {
+      name: "bookstore-frontend",
+      version: "1.0.0",
+      environment: import.meta.env.VITE_ASSERTS_ENV || "dev", // deployment_environment / asserts_env
+    },
     instrumentations: [
       ...getWebInstrumentations(),
       new TracingInstrumentation(),
