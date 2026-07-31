@@ -18,7 +18,7 @@ data:
   POSTGRES_DB: shipping
   SHIPPING_URL: http://shipping:8003
   OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4317
-  OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore,deployment.environment=dev
+  OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore,deployment.environment=dev,asserts_site=dev
 ---
 # Application credentials. Replace the placeholder values before applying
 # (e.g. `kubectl create secret ... --dry-run=client -o yaml`), or use a sealed-secrets/SOPS workflow.

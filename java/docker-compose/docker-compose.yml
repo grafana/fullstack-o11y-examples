@@ -131,7 +131,7 @@ services:
       # deployment.environment populates asserts_env. Set explicitly because these
       # run in docker-compose (not k8s), so env/namespace can't be inferred from
       # cluster metadata. Inherited by checkout via *mysql_svc_env.
-      OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore,deployment.environment=dev
+      OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore,deployment.environment=dev,asserts_site=dev
       OTEL_SERVICE_NAME: products-service
       # Profile streams are keyed by this name (must match OTEL_SERVICE_NAME so
       # profiles correlate with traces); the rest comes from x-pyroscope-env.
@@ -181,7 +181,7 @@ services:
       OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4318
       # KG/Asserts scope (see products): namespace + job "bookstore/<service>",
       # and deployment.environment → asserts_env.
-      OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore,deployment.environment=dev
+      OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore,deployment.environment=dev,asserts_site=dev
       OTEL_SERVICE_NAME: shipping-service
       PYROSCOPE_APPLICATION_NAME: shipping-service
     depends_on:

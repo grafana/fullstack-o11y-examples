@@ -153,6 +153,13 @@ database_observability.mysql "bookstore_mysql" {
 
 loki.relabel "dbo11y_mysql" {
   forward_to = [loki.write.grafana_cloud.receiver]
+  // Mirror the metrics cluster label onto logs — Database Observability
+  // requires custom label values to match across discovery.relabel and
+  // loki.relabel, or log-backed drilldowns break when filtering by it.
+  rule {
+    target_label = "cluster"
+    replacement  = "bookstore-cluster"
+  }
   rule {
     target_label = "job"
     replacement  = "integrations/db-o11y"
@@ -227,6 +234,13 @@ loki.source.file "postgres_logs" {
 
 loki.relabel "dbo11y_postgres" {
   forward_to = [loki.write.grafana_cloud.receiver]
+  // Mirror the metrics cluster label onto logs — Database Observability
+  // requires custom label values to match across discovery.relabel and
+  // loki.relabel, or log-backed drilldowns break when filtering by it.
+  rule {
+    target_label = "cluster"
+    replacement  = "bookstore-cluster"
+  }
   rule {
     target_label = "job"
     replacement  = "integrations/db-o11y"

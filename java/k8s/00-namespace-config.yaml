@@ -23,7 +23,7 @@ data:
   # Knowledge Graph (Asserts) scope. service.namespace builds the job label
   # "bookstore/<service.name>" and sets the namespace scope; deployment.environment
   # populates asserts_env. Shared by all backends via envFrom bookstore-config.
-  OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore,deployment.environment=dev
+  OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore,deployment.environment=dev,asserts_site=dev
 ---
 # Application credentials. Replace the placeholder values before applying
 # (e.g. `kubectl create secret ... --dry-run=client -o yaml`), or use a sealed-secrets/SOPS workflow.
