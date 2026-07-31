@@ -26,8 +26,10 @@ spec:
               valueFrom: { configMapKeyRef: { name: bookstore-config, key: ASSERTS_SITE } }
             - name: POD_NAME
               valueFrom: { fieldRef: { fieldPath: metadata.name } }
+            - name: NODE_NAME
+              valueFrom: { fieldRef: { fieldPath: spec.nodeName } }
             - name: OTEL_RESOURCE_ATTRIBUTES
-              value: "service.namespace=bookstore,deployment.environment=$(ASSERTS_ENV),asserts_site=$(ASSERTS_SITE),service.instance.id=$(POD_NAME)"
+              value: "service.namespace=bookstore,deployment.environment=$(ASSERTS_ENV),asserts_site=$(ASSERTS_SITE),service.instance.id=$(POD_NAME),k8s.node.name=$(NODE_NAME)"
           envFrom:
             - configMapRef: { name: bookstore-config }
             - secretRef: { name: bookstore-db }
@@ -69,8 +71,10 @@ spec:
               valueFrom: { configMapKeyRef: { name: bookstore-config, key: ASSERTS_SITE } }
             - name: POD_NAME
               valueFrom: { fieldRef: { fieldPath: metadata.name } }
+            - name: NODE_NAME
+              valueFrom: { fieldRef: { fieldPath: spec.nodeName } }
             - name: OTEL_RESOURCE_ATTRIBUTES
-              value: "service.namespace=bookstore,deployment.environment=$(ASSERTS_ENV),asserts_site=$(ASSERTS_SITE),service.instance.id=$(POD_NAME)"
+              value: "service.namespace=bookstore,deployment.environment=$(ASSERTS_ENV),asserts_site=$(ASSERTS_SITE),service.instance.id=$(POD_NAME),k8s.node.name=$(NODE_NAME)"
           envFrom:
             - configMapRef: { name: bookstore-config }
             - secretRef: { name: bookstore-db }
@@ -112,8 +116,10 @@ spec:
               valueFrom: { configMapKeyRef: { name: bookstore-config, key: ASSERTS_SITE } }
             - name: POD_NAME
               valueFrom: { fieldRef: { fieldPath: metadata.name } }
+            - name: NODE_NAME
+              valueFrom: { fieldRef: { fieldPath: spec.nodeName } }
             - name: OTEL_RESOURCE_ATTRIBUTES
-              value: "service.namespace=bookstore,deployment.environment=$(ASSERTS_ENV),asserts_site=$(ASSERTS_SITE),service.instance.id=$(POD_NAME)"
+              value: "service.namespace=bookstore,deployment.environment=$(ASSERTS_ENV),asserts_site=$(ASSERTS_SITE),service.instance.id=$(POD_NAME),k8s.node.name=$(NODE_NAME)"
           envFrom:
             - configMapRef: { name: bookstore-config }
             - secretRef: { name: bookstore-db }

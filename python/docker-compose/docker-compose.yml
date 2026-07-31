@@ -124,7 +124,7 @@ services:
       MYSQL_USER: root
       MYSQL_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4317
-      OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore,deployment.environment=${ASSERTS_ENV:-dev},asserts_site=${ASSERTS_SITE:-dev},service.instance.id=bookstore-products
+      OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore,deployment.environment=${ASSERTS_ENV:-dev},asserts_site=${ASSERTS_SITE:-dev},service.instance.id=bookstore-products,grafana.host.id=${HOSTNAME:-bookstore-docker}
       # Profile streams are keyed by this name (must match the OTel service name
       # passed to configure_telemetry so profiles correlate with traces); the
       # server address comes from x-pyroscope-env.
@@ -147,7 +147,7 @@ services:
       SHIPPING_URL: http://shipping:8003
       # PYROSCOPE_SERVER_ADDRESS is inherited via the anchors above; only the
       # per-service app name needs overriding.
-      OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore,deployment.environment=${ASSERTS_ENV:-dev},asserts_site=${ASSERTS_SITE:-dev},service.instance.id=bookstore-checkout
+      OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore,deployment.environment=${ASSERTS_ENV:-dev},asserts_site=${ASSERTS_SITE:-dev},service.instance.id=bookstore-checkout,grafana.host.id=${HOSTNAME:-bookstore-docker}
       PYROSCOPE_APPLICATION_NAME: checkout-service
     depends_on:
       mysql: {condition: service_healthy}
@@ -170,7 +170,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4317
-      OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore,deployment.environment=${ASSERTS_ENV:-dev},asserts_site=${ASSERTS_SITE:-dev},service.instance.id=bookstore-shipping
+      OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore,deployment.environment=${ASSERTS_ENV:-dev},asserts_site=${ASSERTS_SITE:-dev},service.instance.id=bookstore-shipping,grafana.host.id=${HOSTNAME:-bookstore-docker}
       PYROSCOPE_APPLICATION_NAME: shipping-service
     depends_on:
       postgres: {condition: service_healthy}

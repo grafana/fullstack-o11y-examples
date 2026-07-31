@@ -136,7 +136,7 @@ services:
       # deployment.environment populates asserts_env. Set explicitly because these
       # run in docker-compose (not k8s), so env/namespace can't be inferred from
       # cluster metadata. Inherited by checkout via *mysql_svc_env.
-      OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore,deployment.environment=${ASSERTS_ENV:-dev},asserts_site=${ASSERTS_SITE:-dev},service.instance.id=bookstore-products
+      OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore,deployment.environment=${ASSERTS_ENV:-dev},asserts_site=${ASSERTS_SITE:-dev},service.instance.id=bookstore-products,grafana.host.id=${HOSTNAME:-bookstore-docker}
       OTEL_SERVICE_NAME: products-service
       # Profile streams are keyed by this name (must match OTEL_SERVICE_NAME so
       # profiles correlate with traces); the rest comes from x-pyroscope-env.
@@ -160,7 +160,7 @@ services:
       OTEL_SERVICE_NAME: checkout-service
       # Other PYROSCOPE_* vars are inherited via the anchors above; only the
       # per-service app name needs overriding.
-      OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore,deployment.environment=${ASSERTS_ENV:-dev},asserts_site=${ASSERTS_SITE:-dev},service.instance.id=bookstore-checkout
+      OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore,deployment.environment=${ASSERTS_ENV:-dev},asserts_site=${ASSERTS_SITE:-dev},service.instance.id=bookstore-checkout,grafana.host.id=${HOSTNAME:-bookstore-docker}
       PYROSCOPE_APPLICATION_NAME: checkout-service
     depends_on:
       mysql: {condition: service_healthy}
@@ -187,7 +187,7 @@ services:
       OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4318
       # KG/Asserts scope (see products): namespace + job "bookstore/<service>",
       # and deployment.environment → asserts_env.
-      OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore,deployment.environment=${ASSERTS_ENV:-dev},asserts_site=${ASSERTS_SITE:-dev},service.instance.id=bookstore-shipping
+      OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore,deployment.environment=${ASSERTS_ENV:-dev},asserts_site=${ASSERTS_SITE:-dev},service.instance.id=bookstore-shipping,grafana.host.id=${HOSTNAME:-bookstore-docker}
       OTEL_SERVICE_NAME: shipping-service
       PYROSCOPE_APPLICATION_NAME: shipping-service
     depends_on:
