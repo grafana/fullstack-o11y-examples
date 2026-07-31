@@ -20,10 +20,11 @@ data:
   # OTel Java agent 2.x defaults to http/protobuf, so use Alloy's OTLP HTTP
   # port (4318), not the gRPC port (4317).
   OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4318
-  # Knowledge Graph (Asserts) scope. service.namespace builds the job label
-  # "bookstore/<service.name>" and sets the namespace scope; deployment.environment
-  # populates asserts_env. Shared by all backends via envFrom bookstore-config.
-  OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore,deployment.environment=dev,asserts_site=dev
+  # Knowledge Graph (Asserts) env/site scope — single source of truth. Backends
+  # compose OTEL_RESOURCE_ATTRIBUTES from these via $(VAR) (services/backends.yaml)
+  # and Alloy reads them via sys.env.
+  ASSERTS_ENV: "dev"
+  ASSERTS_SITE: "dev"
 ---
 # Application credentials. Replace the placeholder values before applying
 # (e.g. `kubectl create secret ... --dry-run=client -o yaml`), or use a sealed-secrets/SOPS workflow.

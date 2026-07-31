@@ -55,8 +55,8 @@ prometheus.remote_write "grafana_cloud" {
   // relationship forms. asserts_site is set here for the db-o11y exporter metrics;
   // app telemetry also carries it via OTEL_RESOURCE_ATTRIBUTES (asserts_site=dev).
   external_labels = {
-    asserts_env  = "dev",
-    asserts_site = "dev",
+    asserts_env  = sys.env("ASSERTS_ENV"),
+    asserts_site = sys.env("ASSERTS_SITE"),
   }
   endpoint {
     url = sys.env("GCLOUD_PROMETHEUS_URL")
@@ -76,8 +76,8 @@ loki.write "grafana_cloud" {
   // Same KG env/site scope as the metrics remote_write, so db-o11y query-sample
   // logs (and app logs) match their metrics/entities when filtered by env/site.
   external_labels = {
-    asserts_env  = "dev",
-    asserts_site = "dev",
+    asserts_env  = sys.env("ASSERTS_ENV"),
+    asserts_site = sys.env("ASSERTS_SITE"),
   }
   endpoint {
     url = sys.env("GCLOUD_LOKI_URL")

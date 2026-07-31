@@ -20,6 +20,12 @@ spec:
           ports: [{ containerPort: 8001 }]
           env:
             - { name: SERVICE_PORT, value: "8001" }
+            - name: ASSERTS_ENV
+              valueFrom: { configMapKeyRef: { name: bookstore-config, key: ASSERTS_ENV } }
+            - name: ASSERTS_SITE
+              valueFrom: { configMapKeyRef: { name: bookstore-config, key: ASSERTS_SITE } }
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "service.namespace=bookstore,deployment.environment=$(ASSERTS_ENV),asserts_site=$(ASSERTS_SITE)"
           envFrom:
             - configMapRef: { name: bookstore-config }
             - secretRef: { name: bookstore-db }
@@ -55,6 +61,12 @@ spec:
           ports: [{ containerPort: 8002 }]
           env:
             - { name: SERVICE_PORT, value: "8002" }
+            - name: ASSERTS_ENV
+              valueFrom: { configMapKeyRef: { name: bookstore-config, key: ASSERTS_ENV } }
+            - name: ASSERTS_SITE
+              valueFrom: { configMapKeyRef: { name: bookstore-config, key: ASSERTS_SITE } }
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "service.namespace=bookstore,deployment.environment=$(ASSERTS_ENV),asserts_site=$(ASSERTS_SITE)"
           envFrom:
             - configMapRef: { name: bookstore-config }
             - secretRef: { name: bookstore-db }
@@ -90,6 +102,12 @@ spec:
           ports: [{ containerPort: 8003 }]
           env:
             - { name: SERVICE_PORT, value: "8003" }
+            - name: ASSERTS_ENV
+              valueFrom: { configMapKeyRef: { name: bookstore-config, key: ASSERTS_ENV } }
+            - name: ASSERTS_SITE
+              valueFrom: { configMapKeyRef: { name: bookstore-config, key: ASSERTS_SITE } }
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "service.namespace=bookstore,deployment.environment=$(ASSERTS_ENV),asserts_site=$(ASSERTS_SITE)"
           envFrom:
             - configMapRef: { name: bookstore-config }
             - secretRef: { name: bookstore-db }

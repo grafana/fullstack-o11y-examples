@@ -59,8 +59,8 @@ data:
       // here too — matching the services' deployment.environment=dev — so DB and app
       // entities share one env scope and the Service --CONTROLS--> Database link forms.
       external_labels = {
-        asserts_env  = "dev",
-        asserts_site = "dev",
+        asserts_env  = sys.env("ASSERTS_ENV"),
+        asserts_site = sys.env("ASSERTS_SITE"),
       }
       endpoint {
         url = sys.env("GCLOUD_PROMETHEUS_URL")
@@ -80,8 +80,8 @@ data:
       // Same KG env/site scope as the metrics remote_write, so db-o11y query-sample
       // logs (and app logs) match their metrics/entities when filtered by env/site.
       external_labels = {
-        asserts_env  = "dev",
-        asserts_site = "dev",
+        asserts_env  = sys.env("ASSERTS_ENV"),
+        asserts_site = sys.env("ASSERTS_SITE"),
       }
       endpoint {
         url = sys.env("GCLOUD_LOKI_URL")
