@@ -164,7 +164,7 @@ loki.relabel "dbo11y_mysql" {
   // Mirror scope labels onto DB logs for consistent drilldowns.
   rule {
     target_label = "cluster"
-    replacement  = "mysql"
+    replacement  = "dev"
   }
   rule {
     target_label = "asserts_env"
@@ -191,7 +191,7 @@ discovery.relabel "dbo11y_mysql" {
   // Service --CONTROLS--> Database relationship with no custom YAML.
   rule {
     target_label = "cluster"
-    replacement  = "mysql"
+    replacement  = "dev"
   }
   rule {
     target_label = "job"
@@ -251,7 +251,7 @@ loki.relabel "dbo11y_postgres" {
   // Mirror scope labels onto DB logs for consistent drilldowns.
   rule {
     target_label = "cluster"
-    replacement  = "postgres"
+    replacement  = "dev"
   }
   rule {
     target_label = "asserts_env"
@@ -278,7 +278,7 @@ discovery.relabel "dbo11y_postgres" {
   // Service --CONTROLS--> Database relationship with no custom YAML.
   rule {
     target_label = "cluster"
-    replacement  = "postgres"
+    replacement  = "dev"
   }
   rule {
     target_label = "job"

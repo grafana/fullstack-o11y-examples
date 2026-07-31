@@ -145,7 +145,7 @@ data:
       // Mirror scope labels onto DB logs for consistent drilldowns.
       rule {
         target_label = "cluster"
-        replacement  = "mysql"
+        replacement  = "dev"
       }
       rule {
         target_label = "asserts_env"
@@ -172,7 +172,7 @@ data:
       // Service --CONTROLS--> Database relationship with no custom YAML.
       rule {
         target_label = "cluster"
-        replacement  = "mysql"
+        replacement  = "dev"
       }
       rule {
         target_label = "job"
@@ -246,7 +246,7 @@ data:
       // Mirror scope labels onto DB logs for consistent drilldowns.
       rule {
         target_label = "cluster"
-        replacement  = "postgres"
+        replacement  = "dev"
       }
       rule {
         target_label = "asserts_env"
@@ -273,7 +273,7 @@ data:
       // Service --CONTROLS--> Database relationship with no custom YAML.
       rule {
         target_label = "cluster"
-        replacement  = "postgres"
+        replacement  = "dev"
       }
       rule {
         target_label = "job"
