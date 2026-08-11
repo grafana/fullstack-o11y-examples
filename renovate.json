@@ -1,0 +1,62 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Local overrides layered on top of the org-inherited Renovate config: group non-major updates per ecosystem to stop the per-lockfile PR pileup, and automerge the safe tiers once CI is green. Major updates stay separate for manual review.",
+  "prConcurrentLimit": 10,
+  "prHourlyLimit": 4,
+  "rebaseWhen": "behind-base-branch",
+  "platformAutomerge": true,
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am on monday"]
+  },
+  "packageRules": [
+    {
+      "description": "Group Go non-major updates into one PR (all share go/.../services/go.mod+go.sum).",
+      "matchManagers": ["gomod"],
+      "matchUpdateTypes": ["minor", "patch", "digest", "pin"],
+      "groupName": "go non-major"
+    },
+    {
+      "description": "Group Python non-major updates into one PR.",
+      "matchManagers": ["pip_requirements", "pip-compile", "pep621", "poetry"],
+      "matchUpdateTypes": ["minor", "patch", "digest", "pin"],
+      "groupName": "python non-major"
+    },
+    {
+      "description": "Group Java/Maven non-major updates into one PR.",
+      "matchManagers": ["maven"],
+      "matchUpdateTypes": ["minor", "patch", "digest", "pin"],
+      "groupName": "java non-major"
+    },
+    {
+      "description": "Group Ruby/Bundler non-major updates into one PR.",
+      "matchManagers": ["bundler"],
+      "matchUpdateTypes": ["minor", "patch", "digest", "pin"],
+      "groupName": "ruby non-major"
+    },
+    {
+      "description": "Group Node.js/npm non-major updates into one PR.",
+      "matchManagers": ["npm"],
+      "matchUpdateTypes": ["minor", "patch", "digest", "pin"],
+      "groupName": "nodejs non-major"
+    },
+    {
+      "description": "Group container base-image non-major updates into one PR.",
+      "matchManagers": ["dockerfile", "docker-compose"],
+      "matchUpdateTypes": ["minor", "patch", "digest", "pin"],
+      "groupName": "docker images non-major"
+    },
+    {
+      "description": "Automerge the safe tiers (patch/minor/digest/pin) once branch checks pass. Covers security patch/minor updates too. Requires the branch-protection ruleset to allow the Renovate app to bypass required review (see PR description).",
+      "matchUpdateTypes": ["minor", "patch", "digest", "pin"],
+      "automerge": true,
+      "automergeType": "pr"
+    },
+    {
+      "description": "Never automerge major updates; keep them separate and flag for manual review (potential breaking changes).",
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "addLabels": ["needs-manual-review"]
+    }
+  ]
+}
