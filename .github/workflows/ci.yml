@@ -1,0 +1,122 @@
+name: CI
+
+# Build/compile every language example so dependency bumps (incl. Renovate
+# automerge PRs) can't merge without proving each example still builds.
+# Set these jobs as required status checks on main for the gate to be enforced.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Cancel superseded runs on the same PR/branch.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  go:
+    name: go build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: go/docker-compose/services
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go/docker-compose/services/go.mod
+          cache-dependency-path: go/docker-compose/services/go.sum
+      - run: go build ./...
+      - run: go vet ./...
+
+  python:
+    name: python build (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [products, shipping, checkout]
+    defaults:
+      run:
+        working-directory: python/docker-compose/services/${{ matrix.service }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: python/docker-compose/services/${{ matrix.service }}/requirements.txt
+      - run: pip install -r requirements.txt
+      - name: Byte-compile sources
+        run: python -m compileall -q .
+
+  java:
+    name: java build (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [products, shipping, checkout]
+    defaults:
+      run:
+        working-directory: java/docker-compose/services/${{ matrix.service }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - run: mvn -B -ntp -DskipTests package
+
+  ruby:
+    name: ruby build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ruby/docker-compose/services
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          working-directory: ruby/docker-compose/services
+          bundler-cache: true
+      - name: Syntax-check sources
+        run: for f in $(git ls-files '*.rb'); do ruby -c "$f"; done
+
+  nodejs:
+    name: nodejs build (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: frontend
+            dir: nodejs/docker-compose/frontend
+            build: true
+          - name: services
+            dir: nodejs/docker-compose/services
+            build: false
+    defaults:
+      run:
+        working-directory: ${{ matrix.dir }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      # No lockfiles are committed, so use `npm install` (not `npm ci`).
+      - run: npm install
+      - name: Build
+        if: matrix.build
+        run: npm run build
+      - name: Syntax-check sources
+        if: ${{ !matrix.build }}
+        run: for f in $(git ls-files '*.js'); do node --check "$f"; done

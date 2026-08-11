@@ -47,10 +47,18 @@
       "groupName": "docker images non-major"
     },
     {
-      "description": "Automerge the safe tiers (patch/minor/digest/pin) once branch checks pass. Covers security patch/minor updates too. Requires the branch-protection ruleset to allow the Renovate app to bypass required review (see PR description).",
+      "description": "Automerge the safe tiers (patch/minor/digest/pin) once branch checks pass. Covers security patch/minor updates too. Excludes 0.x deps (matchCurrentVersion !/^0/) because SemVer permits breaking changes in pre-1.0 minor releases; those are handled by the manual rule below. Requires the branch-protection ruleset to allow the Renovate app to bypass required review (see PR description).",
       "matchUpdateTypes": ["minor", "patch", "digest", "pin"],
+      "matchCurrentVersion": "!/^0/",
       "automerge": true,
       "automergeType": "pr"
+    },
+    {
+      "description": "Do not automerge pre-1.0 (0.x) non-major updates. SemVer allows breaking changes in 0.x minor releases (Renovate warns about this), and this repo has many 0.x deps (e.g. OpenTelemetry packages). Keep them grouped but require manual review.",
+      "matchUpdateTypes": ["minor", "patch", "digest", "pin"],
+      "matchCurrentVersion": "/^0/",
+      "automerge": false,
+      "addLabels": ["needs-manual-review"]
     },
     {
       "description": "Never automerge major updates; keep them separate and flag for manual review (potential breaking changes).",
