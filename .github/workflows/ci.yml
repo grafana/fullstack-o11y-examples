@@ -120,3 +120,22 @@ jobs:
       - name: Syntax-check sources
         if: ${{ !matrix.build }}
         run: for f in $(git ls-files '*.js'); do node --check "$f"; done
+
+  docker:
+    name: docker build (${{ matrix.lang }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        lang: [go, python, java, ruby, nodejs]
+    defaults:
+      run:
+        working-directory: ${{ matrix.lang }}/docker-compose
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      # Builds every service image via each stack's compose file (correct
+      # per-service build contexts). Gates docker base-image bumps: a broken
+      # base image fails the image build even when the native build passes.
+      # Frontend build args default via `${VAR:-...}`, so no secrets needed.
+      - run: docker compose build
