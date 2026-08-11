@@ -18,7 +18,7 @@
 
   <properties>
     <java.version>21</java.version>
-    <otel.version>1.42.1</otel.version>
+    <otel.version>1.62.0</otel.version>
   </properties>
 
   <dependencies>
