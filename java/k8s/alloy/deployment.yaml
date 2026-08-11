@@ -42,6 +42,11 @@ spec:
             - { containerPort: 4318 }
             - { containerPort: 12347 }
             - { containerPort: 12345 }
+          env:
+            - name: ASSERTS_ENV
+              valueFrom: { configMapKeyRef: { name: bookstore-config, key: ASSERTS_ENV } }
+            - name: ASSERTS_SITE
+              valueFrom: { configMapKeyRef: { name: bookstore-config, key: ASSERTS_SITE } }
           envFrom:
             - secretRef:
                 name: grafana-cloud

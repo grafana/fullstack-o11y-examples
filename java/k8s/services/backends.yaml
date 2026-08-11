@@ -20,6 +20,16 @@ spec:
           ports: [{ containerPort: 8001 }]
           env:
             - { name: SERVICE_PORT, value: "8001" }
+            - name: ASSERTS_ENV
+              valueFrom: { configMapKeyRef: { name: bookstore-config, key: ASSERTS_ENV } }
+            - name: ASSERTS_SITE
+              valueFrom: { configMapKeyRef: { name: bookstore-config, key: ASSERTS_SITE } }
+            - name: POD_NAME
+              valueFrom: { fieldRef: { fieldPath: metadata.name } }
+            - name: NODE_NAME
+              valueFrom: { fieldRef: { fieldPath: spec.nodeName } }
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "service.namespace=bookstore,deployment.environment=$(ASSERTS_ENV),asserts_site=$(ASSERTS_SITE),service.instance.id=$(POD_NAME),k8s.node.name=$(NODE_NAME)"
             - { name: OTEL_SERVICE_NAME, value: "products-service" }
           envFrom:
             - configMapRef: { name: bookstore-config }
@@ -56,6 +66,16 @@ spec:
           ports: [{ containerPort: 8002 }]
           env:
             - { name: SERVICE_PORT, value: "8002" }
+            - name: ASSERTS_ENV
+              valueFrom: { configMapKeyRef: { name: bookstore-config, key: ASSERTS_ENV } }
+            - name: ASSERTS_SITE
+              valueFrom: { configMapKeyRef: { name: bookstore-config, key: ASSERTS_SITE } }
+            - name: POD_NAME
+              valueFrom: { fieldRef: { fieldPath: metadata.name } }
+            - name: NODE_NAME
+              valueFrom: { fieldRef: { fieldPath: spec.nodeName } }
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "service.namespace=bookstore,deployment.environment=$(ASSERTS_ENV),asserts_site=$(ASSERTS_SITE),service.instance.id=$(POD_NAME),k8s.node.name=$(NODE_NAME)"
             - { name: OTEL_SERVICE_NAME, value: "checkout-service" }
           envFrom:
             - configMapRef: { name: bookstore-config }
@@ -92,6 +112,16 @@ spec:
           ports: [{ containerPort: 8003 }]
           env:
             - { name: SERVICE_PORT, value: "8003" }
+            - name: ASSERTS_ENV
+              valueFrom: { configMapKeyRef: { name: bookstore-config, key: ASSERTS_ENV } }
+            - name: ASSERTS_SITE
+              valueFrom: { configMapKeyRef: { name: bookstore-config, key: ASSERTS_SITE } }
+            - name: POD_NAME
+              valueFrom: { fieldRef: { fieldPath: metadata.name } }
+            - name: NODE_NAME
+              valueFrom: { fieldRef: { fieldPath: spec.nodeName } }
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "service.namespace=bookstore,deployment.environment=$(ASSERTS_ENV),asserts_site=$(ASSERTS_SITE),service.instance.id=$(POD_NAME),k8s.node.name=$(NODE_NAME)"
             - { name: OTEL_SERVICE_NAME, value: "shipping-service" }
           envFrom:
             - configMapRef: { name: bookstore-config }

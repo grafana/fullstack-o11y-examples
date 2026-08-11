@@ -23,7 +23,12 @@ import (
 // returned function flushes and shuts them down. The W3C TraceContext
 // propagator lets incoming (Faro) and cross-service trace context flow through.
 func InitTelemetry(ctx context.Context, serviceName string) (func(context.Context) error, error) {
+	// WithFromEnv loads OTEL_RESOURCE_ATTRIBUTES (service.namespace,
+	// deployment.environment — used for Knowledge Graph env/namespace scope) and
+	// OTEL_SERVICE_NAME from the environment. The explicit service.name is applied
+	// last so the per-service name passed here stays authoritative.
 	res, err := resource.New(ctx,
+		resource.WithFromEnv(),
 		resource.WithAttributes(attribute.String("service.name", serviceName)))
 	if err != nil {
 		return nil, err

@@ -37,7 +37,7 @@ otelcol.processor.batch "default" {
   output {
     metrics = [otelcol.exporter.prometheus.default.input]
     logs    = [otelcol.exporter.loki.default.input]
-    traces  = [otelcol.exporter.otlphttp.grafana_cloud.input]
+    traces  = [otelcol.processor.transform.peer_service.input]
   }
 }
 
@@ -47,6 +47,17 @@ otelcol.exporter.prometheus "default" {
 }
 
 prometheus.remote_write "grafana_cloud" {
+  // Knowledge Graph (Asserts) env + site scope, applied to every remote-written
+  // series. The app services also derive asserts_env from the deployment.environment
+  // resource attribute, but the db-o11y exporter metrics carry no OTel resource
+  // attributes — setting asserts_env here keeps DB and app entities in one
+  // environment scope so their (env-scoped) Service --CONTROLS--> Database
+  // relationship forms. asserts_site is set here for the db-o11y exporter metrics;
+  // app telemetry also carries it via OTEL_RESOURCE_ATTRIBUTES (defaults to dev).
+  external_labels = {
+    asserts_env  = sys.env("ASSERTS_ENV"),
+    asserts_site = sys.env("ASSERTS_SITE"),
+  }
   endpoint {
     url = sys.env("GCLOUD_PROMETHEUS_URL")
     basic_auth {
@@ -62,6 +73,12 @@ otelcol.exporter.loki "default" {
 }
 
 loki.write "grafana_cloud" {
+  // Same KG env/site scope as the metrics remote_write, so db-o11y query-sample
+  // logs (and app logs) match their metrics/entities when filtered by env/site.
+  external_labels = {
+    asserts_env  = sys.env("ASSERTS_ENV"),
+    asserts_site = sys.env("ASSERTS_SITE"),
+  }
   endpoint {
     url = sys.env("GCLOUD_LOKI_URL")
     basic_auth {
@@ -73,6 +90,24 @@ loki.write "grafana_cloud" {
 
 // ─── Traces → Grafana Cloud OTLP gateway (otelcol.exporter.otlphttp) ─────────
 // The unified OTLP/HTTP gateway; the exporter appends /v1/traces to the endpoint.
+otelcol.processor.transform "peer_service" {
+  // Resolve DB client spans to a stable peer.service (bookstore-postgres /
+  // bookstore-mysql) instead of the raw connection host. The OTel Java agent
+  // does this via OTEL_INSTRUMENTATION_COMMON_PEER_SERVICE_MAPPING; these SDKs
+  // have no such option, so map it here from db.system on the trace pipeline.
+  error_mode = "ignore"
+  trace_statements {
+    context = "span"
+    statements = [
+      `set(span.attributes["peer.service"], "bookstore-postgres") where span.attributes["db.system"] == "postgresql"`,
+      `set(span.attributes["peer.service"], "bookstore-mysql") where span.attributes["db.system"] == "mysql"`,
+    ]
+  }
+  output {
+    traces = [otelcol.exporter.otlphttp.grafana_cloud.input]
+  }
+}
+
 otelcol.exporter.otlphttp "grafana_cloud" {
   client {
     endpoint = sys.env("OTEL_EXPORTER_OTLP_ENDPOINT")
@@ -144,6 +179,19 @@ database_observability.mysql "bookstore_mysql" {
 
 loki.relabel "dbo11y_mysql" {
   forward_to = [loki.write.grafana_cloud.receiver]
+  // Mirror scope labels onto DB logs for consistent drilldowns.
+  rule {
+    target_label = "cluster"
+    replacement  = "dev"
+  }
+  rule {
+    target_label = "asserts_env"
+    replacement  = sys.env("ASSERTS_ENV")
+  }
+  rule {
+    target_label = "asserts_site"
+    replacement  = sys.env("ASSERTS_SITE")
+  }
   rule {
     target_label = "job"
     replacement  = "integrations/db-o11y"
@@ -156,6 +204,13 @@ loki.relabel "dbo11y_mysql" {
 
 discovery.relabel "dbo11y_mysql" {
   targets = database_observability.mysql.bookstore_mysql.targets
+  // cluster lets the built-in Asserts entity rules (entities_dbo11y.yml /
+  // entities_postgresql.yml) discover the Database entity and the
+  // Service --CONTROLS--> Database relationship with no custom YAML.
+  rule {
+    target_label = "cluster"
+    replacement  = "dev"
+  }
   rule {
     target_label = "job"
     replacement  = "integrations/db-o11y"
@@ -211,6 +266,19 @@ loki.source.file "postgres_logs" {
 
 loki.relabel "dbo11y_postgres" {
   forward_to = [loki.write.grafana_cloud.receiver]
+  // Mirror scope labels onto DB logs for consistent drilldowns.
+  rule {
+    target_label = "cluster"
+    replacement  = "dev"
+  }
+  rule {
+    target_label = "asserts_env"
+    replacement  = sys.env("ASSERTS_ENV")
+  }
+  rule {
+    target_label = "asserts_site"
+    replacement  = sys.env("ASSERTS_SITE")
+  }
   rule {
     target_label = "job"
     replacement  = "integrations/db-o11y"
@@ -223,6 +291,13 @@ loki.relabel "dbo11y_postgres" {
 
 discovery.relabel "dbo11y_postgres" {
   targets = database_observability.postgres.bookstore_postgres.targets
+  // cluster lets the built-in Asserts entity rules (entities_dbo11y.yml /
+  // entities_postgresql.yml) discover the Database entity and the
+  // Service --CONTROLS--> Database relationship with no custom YAML.
+  rule {
+    target_label = "cluster"
+    replacement  = "dev"
+  }
   rule {
     target_label = "job"
     replacement  = "integrations/db-o11y"

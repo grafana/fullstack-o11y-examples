@@ -90,6 +90,11 @@ services:
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
       OTEL_EXPORTER_OTLP_USERNAME: ${OTEL_EXPORTER_OTLP_USERNAME}
       OTEL_EXPORTER_OTLP_PASSWORD: ${OTEL_EXPORTER_OTLP_PASSWORD}
+      # KG env/site scope — single source for the external_labels in
+      # alloy/config.alloy and the services' OTEL_RESOURCE_ATTRIBUTES
+      # (default dev; override once in .env).
+      ASSERTS_ENV: ${ASSERTS_ENV:-dev}
+      ASSERTS_SITE: ${ASSERTS_SITE:-dev}
       # Database Observability DSNs (Alloy reaches the DBs on the bookstore network).
       # The component uses the go-sql-driver "@tcp(...)" form; mysqld_exporter uses "@(...)".
       MYSQL_DSN: "root:${MYSQL_ROOT_PASSWORD}@tcp(mysql:3306)/"
@@ -119,7 +124,7 @@ services:
       MYSQL_USER: root
       MYSQL_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4317
-      OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore
+      OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore,deployment.environment=${ASSERTS_ENV:-dev},asserts_site=${ASSERTS_SITE:-dev},service.instance.id=bookstore-products,grafana.host.id=${HOSTNAME:-bookstore-docker}
       # Profile streams are keyed by this name (must match the OTel service name
       # set in main.go so profiles correlate with traces); the server address
       # comes from x-pyroscope-env.
@@ -142,6 +147,7 @@ services:
       SHIPPING_URL: http://shipping:8003
       # PYROSCOPE_SERVER_ADDRESS is inherited via the anchors above; only the
       # per-service app name needs overriding.
+      OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore,deployment.environment=${ASSERTS_ENV:-dev},asserts_site=${ASSERTS_SITE:-dev},service.instance.id=bookstore-checkout,grafana.host.id=${HOSTNAME:-bookstore-docker}
       PYROSCOPE_APPLICATION_NAME: checkout-service
     depends_on:
       mysql: {condition: service_healthy}
@@ -164,7 +170,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4317
-      OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore
+      OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore,deployment.environment=${ASSERTS_ENV:-dev},asserts_site=${ASSERTS_SITE:-dev},service.instance.id=bookstore-shipping,grafana.host.id=${HOSTNAME:-bookstore-docker}
       PYROSCOPE_APPLICATION_NAME: shipping-service
     depends_on:
       postgres: {condition: service_healthy}
@@ -176,6 +182,7 @@ services:
       context: ./frontend
       args:
         VITE_FARO_ENDPOINT: ${VITE_FARO_ENDPOINT:-}
+        VITE_ASSERTS_ENV: ${ASSERTS_ENV:-dev}
     container_name: bookstore-frontend
     ports:
       - "8080:80"

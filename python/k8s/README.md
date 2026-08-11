@@ -14,7 +14,7 @@ Grafana Alloy → Grafana Cloud.
    docker build -t <registry>/bookstore/checkout:latest -f services/checkout/Dockerfile services
    docker build -t <registry>/bookstore/shipping:latest -f services/shipping/Dockerfile services
    docker build -t <registry>/bookstore/frontend:latest \
-     --build-arg VITE_FARO_ENDPOINT=... frontend
+     --build-arg VITE_FARO_ENDPOINT=... --build-arg VITE_ASSERTS_ENV=dev frontend
    docker push <registry>/bookstore/{products,checkout,shipping,frontend}:latest
    ```
 
