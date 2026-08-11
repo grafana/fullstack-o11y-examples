@@ -27,7 +27,8 @@ data:
   ASSERTS_ENV: "dev"
   ASSERTS_SITE: "dev"
   # Demo only: keep the SQLCommenter comment visible in db.statement. This is
-  # not required for DBo11y correlation and disables SQL literal redaction.
+  # not required for DBo11y correlation and disables SQL literal redaction — do
+  # not copy to production without a data-safety review.
   # Shared by all three backends through envFrom bookstore-config.
   OTEL_INSTRUMENTATION_COMMON_DB_STATEMENT_SANITIZER_ENABLED: "false"
 ---

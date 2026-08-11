@@ -33,11 +33,11 @@ Correlation between an APM trace and a DBo11y query sample requires **both halve
 3. **Server side:** Alloy's `database_observability.mysql` / `database_observability.postgres`
    components collect query samples from `performance_schema` / `pg_stat_statements`.
    With query redaction disabled, the sample retains the comment — and therefore the
-   `traceparent` — letting DBo11y join the query sample back to the exact span/trace.
-   Exact matching keys on the trace ID **and** the span ID, so it pinpoints the DB span
-   only when the injected `span_id` is the DB-client span's. That holds for the Go and
-   Python injectors (which run inside the DB instrumentation); the Java helper is an
-   exception that links at trace level — see the Java span-ID caveat below.
+   `traceparent` — letting DBo11y join the query sample back to the trace (and to the
+   exact span when the injected `span_id` is the DB-client span's). Grafana's exact
+   matching keys on the trace ID **and** the span ID; in this repo every injector appends
+   the comment *before* the DB-client span is created, so the `span_id` is the enclosing
+   span's and correlation is **trace-level** for all languages — see the span-ID caveat below.
 
 Without SQLCommenter, DBo11y still shows queries, but there is no deterministic
 span ↔ query-sample link: `db.statement` alone matches a *normalized* statement, not
@@ -124,8 +124,12 @@ Dependencies ([go.mod](../go/docker-compose/services/go.mod)): `github.com/XSAM/
 `github.com/google/sqlcommenter/go/database/sql v0.1.1`. The same pattern serves both
 MySQL (`go-sql-driver/mysql`) and Postgres (`lib/pq`).
 
-**Order matters:** register otelsql first, then open through the sqlcommenter wrapper,
-so the comment is appended inside the traced call and carries the *DB span's* context.
+**Order matters:** otelsql is registered first and the connection is opened *through* the
+sqlcommenter wrapper, so sqlcommenter is the **outer** layer. It appends the comment before
+the inner `otelsql` DB-client span is created, so the `traceparent` carries the *enclosing*
+span's context (trace-level correlation — see the span-ID caveat below), not the DB-client
+span's. Capturing the DB-client span's own ID would require the sqlcommenter layer to run
+inside the otelsql span.
 
 ### Java (Spring Boot + JdbcTemplate)
 
@@ -149,7 +153,7 @@ see [ProductsController.java](../java/docker-compose/services/products/src/main/
 [CheckoutController.java](../java/docker-compose/services/checkout/src/main/java/com/bookstore/checkout/CheckoutController.java),
 [ShippingController.java](../java/docker-compose/services/shipping/src/main/java/com/bookstore/shipping/ShippingController.java).
 
-> **Span-ID caveat — the Java path links at trace level, not the exact DB span.**
+> **Span-ID caveat — the injectors here carry the enclosing span, so correlation is trace-level (not exact-span).**
 > `annotate(...)` is called inline (`jdbcTemplate.query(SqlCommenter.annotate(SQL), …)`)
 > *before* the OTel Java agent creates the JDBC/DB-client span, so `Span.current()`
 > resolves to the **enclosing** span active at that call site (typically the HTTP/server
@@ -158,10 +162,14 @@ see [ProductsController.java](../java/docker-compose/services/products/src/main/
 > DB-client span on the Java path. Linkage still works: the **trace ID is correct**, so the
 > query sample resolves to the right trace, and query-text (normalized-statement) matching
 > still associates the sample — you land on the trace rather than exactly on the DB span.
-> An exact DB-span match on Java would require injecting the comment once the DB-client
-> span is active (e.g. from a JDBC interceptor running inside that span), which this demo
-> does not do. The Go and Python injectors run inside the DB instrumentation, so their
-> `span_id` is the DB-client span's and they match exactly.
+> An exact DB-span match would require injecting the comment once the DB-client span is
+> active (e.g. from a JDBC interceptor running inside that span), which this demo does not
+> do. **This is not unique to Java:** the Go injector wraps SQLCommenter *outside* the
+> `otelsql` layer ([db.go](../go/docker-compose/services/common/db.go)), so it likewise
+> appends the comment before the DB-client span exists and carries the enclosing span's ID;
+> the Python (SQLAlchemy) path has not been verified. Treat **trace-level correlation as the
+> contract for every language here**, and confirm exact span matching empirically (step 4)
+> before relying on it.
 
 Needed pieces:
 - `io.opentelemetry:opentelemetry-api` (compile-time, for `Span.current()`) — [pom.xml](../java/docker-compose/services/products/pom.xml)
@@ -264,10 +272,10 @@ The comment can only be observed if the server records full statement text:
 3. In Grafana Cloud → **Databases** (DBo11y app): open a query's samples and check the
    SQL text includes `/*traceparent='00-…'*/`.
 4. In Explore/Traces, open the matching trace ID: the DB client span's
-   `db.statement` / `db.query.text` shows the same statement. On the Java path, expect the
-   comment's `span_id` to equal the **enclosing** span rather than the DB-client span, so
-   verify linkage by trace ID + statement text — not by an exact span-ID match (see the
-   Java span-ID caveat above).
+   `db.statement` / `db.query.text` shows the same statement. Expect the comment's `span_id`
+   to equal the **enclosing** span rather than the DB-client span (confirmed for Java and Go;
+   Python unverified), so verify linkage by trace ID + statement text — not by an exact
+   span-ID match (see the span-ID caveat above).
 
 ## Gotchas
 
@@ -282,7 +290,7 @@ The comment can only be observed if the server records full statement text:
 - **Java agent sanitization**: the OTel Java agent sanitizes `db.statement` by default,
   rewriting quoted literals — including SQLCommenter values — to `?`, so the span shows
   `/*traceparent=?,db_driver=?*/`. This does not break correlation: matching uses the
-  `traceparent` captured from the database query sample (trace-level on the Java path per
+  `traceparent` captured from the database query sample (trace-level here, per
   the span-ID caveat above), while query-text matching compares normalized statements.
   This repo disables sanitization in both Java
   deployment modes only so the demo's trace view shows the complete comment; see
