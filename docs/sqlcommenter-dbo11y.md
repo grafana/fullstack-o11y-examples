@@ -154,10 +154,10 @@ Values must be URL-encoded and single-quoted per the
 [SQLCommenter spec](https://google.github.io/sqlcommenter/spec/) (`quote()` in the helper).
 
 The agent also sanitizes `db.statement` by default, redacting the comment's
-`traceparent` to `?` in the span. This repo sets
-`OTEL_INSTRUMENTATION_COMMON_DB_STATEMENT_SANITIZER_ENABLED=false` so the
-`trace_id`/`span_id` stay visible for DBo11y's exact (trace-id/span-id) match — it
-doesn't change the match by query text. See [Gotchas](#gotchas) for the details.
+values to `?` in the span. For this demo only, the Java services set
+`OTEL_INSTRUMENTATION_COMMON_DB_STATEMENT_SANITIZER_ENABLED=false` so the full
+SQLCommenter comment is visible when inspecting a trace. This is not required
+for DBo11y correlation; see [Gotchas](#gotchas) for the behavior and risk.
 
 ### Ruby (Sinatra + Sequel)
 
@@ -258,17 +258,13 @@ The comment can only be observed if the server records full statement text:
 - **New OTel semconv** emits `db.query.text` instead of `db.statement`
   (opt-in via `OTEL_SEMCONV_STABILITY_OPT_IN=database`). The linkage works identically —
   DBo11y correlates on the traceparent in the SQL text, not on the attribute name.
-- **Java agent sanitization & the "exact" (trace-id/span-id) match**: the OTel Java
-  agent sanitizes `db.statement` by default, rewriting quoted literals — *including the
-  SQLCommenter comment's values* — to `?`, so the span shows
-  `/*traceparent=?,db_driver=?*/`. This does **not** break the server-side linkage: the
-  real comment (with the true `traceparent`) always travels in the SQL sent to the
-  database and is captured in the query sample. But it hides the `trace_id`/`span_id` in
-  the *span's* `db.statement`, which is what DBo11y uses for its **exact match by
-  trace-id/span-id**. Setting `OTEL_INSTRUMENTATION_COMMON_DB_STATEMENT_SANITIZER_ENABLED=false`
-  keeps the real IDs in `db.statement`, enabling that exact match. It does **not** affect
-  the **match by query text** — that compares the *normalized* statement, which the
-  sanitizer leaves unchanged either way. This repo's Java services set the flag in both
-  deployment modes — see [docker-compose.yml](../java/docker-compose/docker-compose.yml)
-  and, for Kubernetes, the `bookstore-config` ConfigMap in
-  [k8s/00-namespace-config.yaml](../java/k8s/00-namespace-config.yaml).
+- **Java agent sanitization**: the OTel Java agent sanitizes `db.statement` by default,
+  rewriting quoted literals — including SQLCommenter values — to `?`, so the span shows
+  `/*traceparent=?,db_driver=?*/`. This does not break correlation: exact matching uses
+  the `traceparent` captured from the database query sample, while query-text matching
+  compares normalized statements. This repo disables sanitization in both Java
+  deployment modes only so the demo's trace view shows the complete comment; see
+  [docker-compose.yml](../java/docker-compose/docker-compose.yml) and the
+  [`bookstore-config` ConfigMap](../java/k8s/00-namespace-config.yaml). Disabling the
+  sanitizer applies to every statement and can expose SQL literals in trace data, so it
+  should not be copied into a production configuration without a data-safety review.
