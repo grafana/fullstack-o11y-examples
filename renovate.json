@@ -4,7 +4,10 @@
   "prConcurrentLimit": 10,
   "prHourlyLimit": 4,
   "rebaseWhen": "behind-base-branch",
-  "platformAutomerge": true,
+  "platformAutomerge": false,
+  "vulnerabilityAlerts": {
+    "groupName": "{{#if isMajor}}{{{packageFileDir}}} {{{depNameSanitized}}} security major{{else}}{{{manager}}} security non-major{{/if}}"
+  },
   "lockFileMaintenance": {
     "enabled": true,
     "schedule": ["before 6am on monday"]
