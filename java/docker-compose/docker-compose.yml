@@ -137,6 +137,11 @@ services:
       # run in docker-compose (not k8s), so env/namespace can't be inferred from
       # cluster metadata. Inherited by checkout via *mysql_svc_env.
       OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore,deployment.environment=${ASSERTS_ENV:-dev},asserts_site=${ASSERTS_SITE:-dev},service.instance.id=bookstore-products,grafana.host.id=${HOSTNAME:-bookstore-docker}
+      # Demo only: keep the SQLCommenter comment visible in db.statement. This is
+      # not required for DBo11y correlation and disables redaction for all SQL
+      # literals — do not copy to production without a data-safety review.
+      # Inherited by checkout via *mysql_svc_env.
+      OTEL_INSTRUMENTATION_COMMON_DB_STATEMENT_SANITIZER_ENABLED: "false"
       OTEL_SERVICE_NAME: products-service
       OTEL_INSTRUMENTATION_COMMON_PEER_SERVICE_MAPPING: "postgres:5432=bookstore-postgres,mysql:3306=bookstore-mysql"
       # Profile streams are keyed by this name (must match OTEL_SERVICE_NAME so
@@ -189,6 +194,10 @@ services:
       # KG/Asserts scope (see products): namespace + job "bookstore/<service>",
       # and deployment.environment → asserts_env.
       OTEL_RESOURCE_ATTRIBUTES: service.namespace=bookstore,deployment.environment=${ASSERTS_ENV:-dev},asserts_site=${ASSERTS_SITE:-dev},service.instance.id=bookstore-shipping,grafana.host.id=${HOSTNAME:-bookstore-docker}
+      # Demo only: keep the SQLCommenter comment visible in db.statement. This is
+      # not required for DBo11y correlation and disables SQL literal redaction — do
+      # not copy to production without a data-safety review.
+      OTEL_INSTRUMENTATION_COMMON_DB_STATEMENT_SANITIZER_ENABLED: "false"
       OTEL_SERVICE_NAME: shipping-service
       OTEL_INSTRUMENTATION_COMMON_PEER_SERVICE_MAPPING: "postgres:5432=bookstore-postgres,mysql:3306=bookstore-mysql"
       PYROSCOPE_APPLICATION_NAME: shipping-service
