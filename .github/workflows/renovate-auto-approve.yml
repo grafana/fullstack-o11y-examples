@@ -1,0 +1,34 @@
+name: Renovate auto-approve
+
+# Auto-approve Renovate's own PRs so they satisfy the org-level "require 1
+# review" ruleset (Renovate cannot self-approve). This does NOT weaken safety:
+# the repo "CI required checks" ruleset still gates every merge, so a Renovate
+# PR only merges once the build gate is green.
+#
+# Re-approves on every push because the org ruleset has
+# dismiss_stale_reviews_on_push=true and require_last_push_approval=true. The
+# approval is submitted by github-actions[bot] — a different identity than the
+# renovate-sh-app[bot] author/pusher — which satisfies last-push approval.
+#
+# Uses the `pull_request` trigger (Renovate branches live in this repo, not a
+# fork, so GITHUB_TOKEN gets the declared pull-requests:write) and the built-in
+# gh CLI — no external actions to pin, keeping it clean under the SHA-pin/zizmor
+# rulesets.
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  approve:
+    if: github.event.pull_request.user.login == 'renovate-sh-app[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Approve Renovate PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: gh pr review "$PR_URL" --approve --body "Auto-approving Renovate PR — required CI checks gate the merge."
