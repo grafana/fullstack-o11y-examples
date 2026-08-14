@@ -1,4 +1,3 @@
 -r ../common/base-requirements.txt
 PyMySQL==1.1.1
 cryptography==49.0.0
-requests==2.33.0
