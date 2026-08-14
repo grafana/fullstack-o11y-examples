@@ -14,10 +14,11 @@ on:
 permissions:
   contents: read
 
-# Cancel superseded runs on the same PR/branch.
+# Cancel superseded PR runs, but never cancel a push build on main (keep the
+# post-merge signal on every main commit).
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   go:
@@ -55,7 +56,10 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-          cache-dependency-path: python/docker-compose/services/${{ matrix.service }}/requirements.txt
+          # Include the shared base file so the cache key changes when it does.
+          cache-dependency-path: |
+            python/docker-compose/services/${{ matrix.service }}/requirements.txt
+            python/docker-compose/services/common/base-requirements.txt
       - run: pip install -r requirements.txt
       - name: Byte-compile sources
         run: python -m compileall -q . ../common
@@ -97,7 +101,11 @@ jobs:
           working-directory: ruby/docker-compose/services
           bundler-cache: true
       - name: Syntax-check sources
-        run: for f in $(git ls-files '*.rb'); do ruby -c "$f"; done
+        run: |
+          set -euo pipefail
+          count=$(git ls-files '*.rb' | wc -l)
+          [ "$count" -gt 0 ] || { echo "No .rb files matched — refusing to pass"; exit 1; }
+          git ls-files -z '*.rb' | xargs -0 -n1 ruby -c
 
   nodejs:
     name: nodejs build (${{ matrix.name }})
@@ -129,7 +137,11 @@ jobs:
         run: npm run build
       - name: Syntax-check sources
         if: ${{ !matrix.build }}
-        run: for f in $(git ls-files '*.js'); do node --check "$f"; done
+        run: |
+          set -euo pipefail
+          count=$(git ls-files '*.js' | wc -l)
+          [ "$count" -gt 0 ] || { echo "No .js files matched — refusing to pass"; exit 1; }
+          git ls-files -z '*.js' | xargs -0 -n1 node --check
 
   docker:
     name: docker build (${{ matrix.lang }})

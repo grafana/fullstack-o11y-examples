@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "description": "Local overrides layered on top of the org-inherited Renovate config: group non-major updates per ecosystem to stop the per-lockfile PR pileup, and automerge the safe tiers once CI is green. Major updates stay separate for manual review.",
+  "description": "Local overrides layered on top of the org-inherited Renovate config: group non-major updates per ecosystem to stop the per-manifest PR pileup, and automerge the safe tiers once CI is green. Major and pre-1.0 (0.x) updates stay separate for manual review.",
   "prConcurrentLimit": 10,
   "prHourlyLimit": 4,
   "rebaseWhen": "behind-base-branch",
@@ -50,16 +50,16 @@
       "groupName": "docker images non-major"
     },
     {
-      "description": "Automerge the safe tiers (patch/minor/digest/pin) once branch checks pass. Covers security patch/minor updates too. Excludes 0.x deps (matchCurrentVersion !/^0/) because SemVer permits breaking changes in pre-1.0 minor releases; those are handled by the manual rule below. Requires the branch-protection ruleset to allow the Renovate app to bypass required review (see PR description).",
+      "description": "Automerge the safe tiers (minor/patch/digest/pin) once branch checks pass — covers security patch/minor too. 0.x deps are pulled into a separate manual group by the rule below (applied after this one), so a single 0.x dep no longer blocks automerge of an ecosystem's non-0.x group. Requires the branch-protection ruleset to allow the Renovate app to bypass required review (see PR description).",
       "matchUpdateTypes": ["minor", "patch", "digest", "pin"],
-      "matchCurrentVersion": "!/^0/",
       "automerge": true,
       "automergeType": "pr"
     },
     {
-      "description": "Do not automerge pre-1.0 (0.x) non-major updates. SemVer allows breaking changes in 0.x minor releases (Renovate warns about this), and this repo has many 0.x deps (e.g. OpenTelemetry packages). Keep them grouped but require manual review.",
+      "description": "Split pre-1.0 (0.x) non-major updates into their own per-ecosystem group and require manual review. SemVer permits breaking changes in 0.x minor releases (Renovate warns about this), and this repo has many 0.x deps (e.g. OpenTelemetry packages); a separate group lets the non-0.x members of each ecosystem still automerge via the rule above. Uses the plain /^0/ matcher (not a negated one) for broad Renovate-version compatibility.",
       "matchUpdateTypes": ["minor", "patch", "digest", "pin"],
       "matchCurrentVersion": "/^0/",
+      "groupName": "{{{manager}}} 0.x (manual review)",
       "automerge": false,
       "addLabels": ["needs-manual-review"]
     },
