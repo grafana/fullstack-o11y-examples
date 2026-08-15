@@ -1,6 +1,8 @@
 # Shared runtime + OpenTelemetry deps for all bookstore Python services.
 # setuptools provides pkg_resources, which opentelemetry-instrumentation imports
-# (python:3.12-slim no longer bundles it).
+# (python:3.12-slim no longer bundles it). Keep < 82: setuptools removed
+# pkg_resources in v82, so any >=82 bump breaks the services at import time
+# (see closed PR #23). Renovate is constrained to <82 in renovate.json.
 setuptools==75.1.0
 # requests is instrumented by otel_setup for all services (not just checkout).
 requests==2.33.0

@@ -68,6 +68,12 @@
       "matchUpdateTypes": ["major"],
       "automerge": false,
       "addLabels": ["needs-manual-review"]
+    },
+    {
+      "description": "Cap setuptools below v82. This repo pins setuptools only to provide pkg_resources for opentelemetry-instrumentation (python:3.12-slim no longer bundles it); setuptools removed pkg_resources in v82, so any >=82 bump breaks the Python services at import time (see closed PR #23). Remove this cap if the otel bootstrap migrates off pkg_resources to importlib.metadata.",
+      "matchManagers": ["pip_requirements", "pip-compile", "pep621", "poetry"],
+      "matchPackageNames": ["setuptools"],
+      "allowedVersions": "<82"
     }
   ]
 }
