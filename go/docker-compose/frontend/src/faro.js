@@ -18,7 +18,7 @@ import { TracingInstrumentation } from "@grafana/faro-web-tracing";
 // errors from the moment the app loads. The Grafana Cloud collector URL embeds the
 // app key as its final path segment, so no separate apiKey is needed.
 //
-// ReactIntegration adds React Router v6 instrumentation (route-templated page views
+// ReactIntegration adds React Router v7 instrumentation (route-templated page views
 // via <FaroRoutes>) and backs the <FaroErrorBoundary>. TracingInstrumentation
 // propagates W3C traceparent on same-origin /api calls, linking browser spans to
 // the backend service + SQL spans in one distributed trace.
@@ -39,7 +39,7 @@ if (!url || url.includes("<")) {
       new TracingInstrumentation(),
       new ReactIntegration({
         router: {
-          version: ReactRouterVersion.V6,
+          version: ReactRouterVersion.V7,
           dependencies: {
             createRoutesFromChildren,
             matchRoutes,
