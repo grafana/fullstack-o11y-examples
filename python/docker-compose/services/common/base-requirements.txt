@@ -1,7 +1,7 @@
 # Shared runtime + OpenTelemetry deps for all bookstore Python services.
 # setuptools provides pkg_resources, which opentelemetry-instrumentation imports
 # (python:3.12-slim no longer bundles it).
-setuptools==75.1.0
+setuptools==83.0.0
 # requests is instrumented by otel_setup for all services (not just checkout).
 requests==2.33.0
 Flask==3.1.3
