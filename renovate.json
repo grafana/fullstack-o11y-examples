@@ -6,7 +6,8 @@
   "rebaseWhen": "behind-base-branch",
   "platformAutomerge": false,
   "vulnerabilityAlerts": {
-    "groupName": "{{#if isMajor}}{{{packageFileDir}}} {{{depNameSanitized}}} security major{{else}}{{{manager}}} security non-major{{/if}}"
+    "description": "Group security updates. For majors: drop packageFileDir from the group key so a single dep bumped across all 5 language frontends lands in ONE PR instead of five. The two lockstep pairs (vite+@vitejs/plugin-react, react-router-dom+@grafana/faro-react) map to the SAME group name their non-security partner uses in packageRules below — vulnerabilityAlerts force-overrides packageRules for security branches, so the security-flagged member (vite, react-router-dom) must resolve its group name here to share a branch with the partner's major bump.",
+    "groupName": "{{#if isMajor}}{{#if (or (equals depName \"vite\") (equals depName \"@vitejs/plugin-react\"))}}frontend vite + plugin-react{{else}}{{#if (or (equals depName \"react-router-dom\") (equals depName \"@grafana/faro-react\"))}}frontend react-router + faro-react{{else}}{{{depNameSanitized}}} security major{{/if}}{{/if}}{{else}}{{{manager}}} security non-major{{/if}}"
   },
   "lockFileMaintenance": {
     "enabled": true,
@@ -74,6 +75,20 @@
       "matchManagers": ["pip_requirements", "pip-compile", "pep621", "poetry"],
       "matchPackageNames": ["setuptools"],
       "allowedVersions": "<82"
+    },
+    {
+      "description": "Lockstep: vite and @vitejs/plugin-react must bump together on majors. @vitejs/plugin-react's peerDependencies.vite trails vite by a major (e.g. plugin-react v4 peers vite ^4||^5), so bumping vite alone breaks npm's peer-dep resolution (ERESOLVE) at docker build. Grouping both into one major PR — across all 5 language frontends — lets them move together. Placed after the major rule so it keeps automerge:false + needs-manual-review while overriding only the group name; mirrors the vulnerabilityAlerts group so a security-triggered vite major joins the plugin-react major in the same branch.",
+      "matchManagers": ["npm"],
+      "matchPackageNames": ["vite", "@vitejs/plugin-react"],
+      "matchUpdateTypes": ["major"],
+      "groupName": "frontend vite + plugin-react"
+    },
+    {
+      "description": "Lockstep: react-router-dom and @grafana/faro-react must bump together on majors. Faro's peerDependencies.react-router-dom and its ReactRouterVersion enum track the router major (faro-react 1.x peers react-router-dom ^4||^5||^6 and has no V7 enum), so bumping the router alone silently breaks Faro route instrumentation — core to this repo's demo. Groups both into one major PR across all 5 language frontends. NOTE: the bump still needs a manual frontend/src/faro.js change (ReactRouterVersion.V6 -> V7) — hence needs-manual-review from the major rule above.",
+      "matchManagers": ["npm"],
+      "matchPackageNames": ["react-router-dom", "@grafana/faro-react"],
+      "matchUpdateTypes": ["major"],
+      "groupName": "frontend react-router + faro-react"
     }
   ]
 }
