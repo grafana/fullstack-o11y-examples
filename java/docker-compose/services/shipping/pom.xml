@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>3.3.4</version>
+    <version>3.5.16</version>
     <relativePath/>
   </parent>
 
@@ -18,7 +18,7 @@
 
   <properties>
     <java.version>21</java.version>
-    <otel.version>1.62.0</otel.version>
+    <otel.version>1.65.0</otel.version>
   </properties>
 
   <dependencies>
