@@ -68,6 +68,12 @@
       "matchUpdateTypes": ["major"],
       "automerge": false,
       "addLabels": ["needs-manual-review"]
+    },
+    {
+      "description": "Cap setuptools below v82. setuptools removed pkg_resources in v82.0.0, and this repo pins setuptools specifically to provide pkg_resources for opentelemetry-instrumentation (python:3.12-slim no longer bundles it — see the note in python/docker-compose/services/common/base-requirements.txt). Allowing >=82 breaks OTel instrumentation loading at service startup for every Python service. Renovate will still offer security/other fixes within the allowed <82 range. Revisit if the OTel import path moves off pkg_resources to importlib.metadata/importlib.resources.",
+      "matchManagers": ["pip_requirements", "pip-compile", "pep621", "poetry"],
+      "matchPackageNames": ["setuptools"],
+      "allowedVersions": "<82"
     }
   ]
 }
