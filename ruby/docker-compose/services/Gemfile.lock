@@ -136,7 +136,7 @@ GEM
     rackup (2.3.1)
       rack (>= 3)
     rake (13.4.2)
-    sequel (5.106.0)
+    sequel (5.107.0)
       bigdecimal
     sinatra (4.2.1)
       logger (>= 1.6.0)
