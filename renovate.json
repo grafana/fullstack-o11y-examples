@@ -89,6 +89,14 @@
       "matchPackageNames": ["react-router-dom", "@grafana/faro-react"],
       "matchUpdateTypes": ["major"],
       "groupName": "frontend react-router + faro-react"
+    },
+    {
+      "description": "Lockstep: the Python OpenTelemetry SDK/exporter (1.x, e.g. opentelemetry-sdk) and the instrumentation packages (0.x beta, e.g. opentelemetry-instrumentation-flask) share a single opentelemetry-api and MUST bump together — opentelemetry-sdk 1.44 pins opentelemetry-api 1.44 while instrumentation 0.48b0 pins 1.27, so a partial bump is unresolvable (pip ResolutionImpossible). Without this rule the 1.x packages land in 'python non-major' and the 0.x ones in the '0.x manual review' group, producing two PRs that each fail to install. Group all opentelemetry-* pip packages into one manual-review PR so they move as a set. Placed after the 0.x rule so this groupName wins for the 0.x instrumentation packages too.",
+      "matchManagers": ["pip_requirements", "pip-compile", "pep621", "poetry"],
+      "matchPackageNames": ["/^opentelemetry-/"],
+      "groupName": "python opentelemetry",
+      "automerge": false,
+      "addLabels": ["needs-manual-review"]
     }
   ]
 }
