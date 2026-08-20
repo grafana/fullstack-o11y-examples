@@ -20,8 +20,7 @@
 # FaroApp in the `wcalldemo` stack, and (once that entity exists) resolve its
 # CALLS edge to the backend services it talks to.
 #
-# See ../../../docs/kg-validation.md for the investigation that led here:
-# the Bookstore FaroApp is already correctly registered and already sends
+# The Bookstore FaroApp is already correctly registered and already sends
 # correctly-propagated distributed traces to the backend (confirmed live via
 # gcx), but no `Frontend`-typed entity is ever created because nothing
 # produces a metric tagged `asserts_entity_type = "Frontend"` for it. This
