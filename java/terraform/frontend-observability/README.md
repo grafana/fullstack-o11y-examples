@@ -33,8 +33,8 @@ terraform validate
 
 If you actually need to check for drift or make a change, use
 [python's copy](../../../python/terraform/frontend-observability/README.md#usage)
-— its README documents the state-adoption (`terraform import`) steps for a
-fresh checkout, which apply equally here since the state is shared.
+— its README documents the safer import-or-create flow for a fresh checkout,
+which applies equally here since the state is shared.
 
 ## What this creates
 

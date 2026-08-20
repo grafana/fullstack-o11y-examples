@@ -8,11 +8,12 @@ working reference example.
 
 ## Usage
 
-⚠️ **The folder and rule group below already exist in `wcalldemo`** (see "What
-this creates"). `terraform.tfstate` is gitignored on purpose — state files can
-carry sensitive data and shouldn't live in git — but that means a fresh clone
-has no record of them, and a naive `plan`/`apply` here will try to create
-duplicates. Import the existing resources into your local state first:
+⚠️ **The folder and rule group below may already exist in `wcalldemo`** (see
+"What this creates"). `terraform.tfstate` is gitignored on purpose — state
+files can carry sensitive data and shouldn't live in git — but that means a
+fresh clone has no record of existing resources. Use this flow so Terraform
+imports them when they exist, or creates them when the folder is genuinely
+missing:
 
 ```sh
 cd python/terraform/frontend-observability
@@ -23,17 +24,33 @@ terraform validate
 # Never write this to a file — export it for this shell session only:
 export TF_VAR_grafana_auth=$(grep '^GRAFANA_SERVICE_ACCOUNT_TOKEN=' ../../docker-compose/.env.wcalldemo | cut -d= -f2-)
 
-# First time in a fresh checkout: adopt the existing folder + rule group into
-# your local state instead of creating new ones.
-FOLDER_UID=$(curl -fsS -H "Authorization: Bearer $TF_VAR_grafana_auth" \
-  https://wcalldemo.grafana.net/api/folders \
-  | jq -r '.[] | select(.title=="bookstore-frontend-observability-asserts") | .uid')
-terraform import grafana_folder.frontend_observability_asserts "$FOLDER_UID"
-terraform import grafana_rule_group.frontend_observability_asserts "$FOLDER_UID:frontend-observability-asserts"
+if [ -z "$TF_VAR_grafana_auth" ]; then
+  echo "TF_VAR_grafana_auth is empty; check ../../docker-compose/.env.wcalldemo"
+  exit 1
+fi
 
-terraform plan -out=tfplan   # should show "No changes." once imported —
-                              # if it wants to add/change/destroy something,
-                              # stop and figure out why before applying
+# First time in a fresh checkout: adopt the existing folder + rule group into
+# your local state instead of creating new ones. If the folder is not found,
+# Terraform will create both resources during apply.
+FOLDERS_JSON=$(curl -fsS -H "Authorization: Bearer $TF_VAR_grafana_auth" \
+  https://wcalldemo.grafana.net/api/folders) || {
+  echo "Folder lookup failed; check that the token is valid for wcalldemo."
+  exit 1
+}
+
+FOLDER_UID=$(printf '%s\n' "$FOLDERS_JSON" \
+  | jq -r '.[]? | objects | select(.title=="bookstore-frontend-observability-asserts") | .uid')
+
+if [ -n "$FOLDER_UID" ]; then
+  terraform import grafana_folder.frontend_observability_asserts "$FOLDER_UID"
+  terraform import grafana_rule_group.frontend_observability_asserts "$FOLDER_UID:frontend-observability-asserts"
+else
+  echo "Folder not found; Terraform will create the folder and rule group."
+fi
+
+terraform plan -out=tfplan   # if importing, this should show "No changes.";
+                              # if creating, this should show only the missing
+                              # resources from "What this creates"
 terraform apply tfplan       # only if plan shows a real, intended change
 ```
 
