@@ -42,6 +42,18 @@ otelcol.processor.batch "default" {
 }
 
 // ─── Metrics → Grafana Cloud Prometheus ─────────────────────────────────────
+// No asserts_env/asserts_site external_labels here — this stack's Knowledge
+// Graph env/site scope comes from Grafana Cloud's own UI instead. In
+// wcalldemo: Asserts app → Configuration → Connect Environment → Prometheus,
+// "Additional frameworks knowledge graph settings" section
+// (https://wcalldemo.grafana.net/a/grafana-asserts-app/configuration/connect-env/prometheus)
+// is configured to map the `environment` label to the Environment label
+// (asserts_env) and the `site` label to the Cloud region label (asserts_site)
+// for every metric on this stack. So raw metrics only need to carry plain
+// `environment`/`site` labels (see the DBo11y section below) — not literal
+// `asserts_env`/`asserts_site` names. Change that UI setting, not this file,
+// if you rename these labels or apply this config to a stack that isn't
+// configured the same way.
 otelcol.exporter.prometheus "default" {
   forward_to = [prometheus.remote_write.grafana_cloud.receiver]
 }
@@ -57,6 +69,8 @@ prometheus.remote_write "grafana_cloud" {
 }
 
 // ─── Logs → Grafana Cloud Loki ──────────────────────────────────────────────
+// Same env/site → asserts_env/asserts_site mapping as the Prometheus
+// remote_write above (see its comment) — no external_labels needed here either.
 otelcol.exporter.loki "default" {
   forward_to = [loki.write.grafana_cloud.receiver]
 }
@@ -130,6 +144,11 @@ pyroscope.write "grafana_cloud" {
 // Metrics → existing prometheus.remote_write.grafana_cloud; logs → existing
 // loki.write.grafana_cloud. The integrations/db-o11y job label is required by the
 // Grafana Database Observability app. DSNs come from the Alloy service env.
+//
+// The `environment`/`site` relabel rules below (on both MySQL and PostgreSQL)
+// feed the Connect Environment mapping described above — db-o11y's own
+// metrics/logs carry no OTel resource attributes, so this is what puts them
+// in the same asserts_env/asserts_site scope as the app services.
 
 // ── MySQL ────────────────────────────────────────────────────────────────────
 // mysqld_exporter provides the metric targets; the component collects query
