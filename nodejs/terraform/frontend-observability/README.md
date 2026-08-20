@@ -19,21 +19,20 @@ working reference example.
 
 This copy is read-only reference — the real apply happens from
 [`python/terraform/frontend-observability/`](../../../python/terraform/frontend-observability/)
-(see the warning above). Use this only to review the config or check it
-against live state for drift; don't run `terraform apply` here.
+(see the warning above). It has no local state of its own, so running
+`terraform plan` or `terraform apply` here would try to create the folder
+and rule group again instead of showing drift against the real ones — don't
+run either from this copy. This is as far as it goes:
 
 ```sh
 cd nodejs/terraform/frontend-observability
 terraform init
 terraform validate
-
-# Auth: a Grafana Cloud token for wcalldemo with alerting-rule write scope.
-# Never write this to a file — export it for this shell session only:
-export TF_VAR_grafana_auth=$(grep '^GRAFANA_CLOUD_API_KEY=' ../../docker-compose/.env.wcalldemo | cut -d= -f2)
-
-terraform plan   # read-only — compares this config against live wcalldemo
-                  # state; do not apply from this copy (see warning above)
 ```
+
+If you actually need to check for drift or make a change, use
+[python's copy](../../../python/terraform/frontend-observability/README.md#usage),
+which has the state-adoption (`terraform import`) steps this one is missing.
 
 ## What this creates
 
