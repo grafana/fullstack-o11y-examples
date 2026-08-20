@@ -12,9 +12,8 @@
 Provisions the Grafana-managed recording rules that make Grafana Cloud's
 Knowledge Graph discover a `Frontend` entity for the Bookstore FaroApp in
 `wcalldemo`, and let its CALLS edge to the backend services resolve. See
-[`../../../docs/kg-validation.md`](../../../docs/kg-validation.md) for the
-investigation that found this gap, and comments in `recording_rules.tf` for
-how each rule was adapted from the working reference example.
+comments in `recording_rules.tf` for how each rule was adapted from the
+working reference example.
 
 ## Usage
 
@@ -43,9 +42,8 @@ terraform apply tfplan       # only after reviewing the plan
 
 ## Verifying it worked
 
-After `apply`, wait 5-15 minutes (recording-rule evaluation + KG entity
-refresh lag — see the diagnose-entity-graph guidance in the investigation
-doc), then:
+After `apply`, wait 5-15 minutes for recording-rule evaluation and KG entity
+refresh lag, then:
 
 ```sh
 gcx kg entities list --type Frontend --context wcalldemo
