@@ -5,7 +5,9 @@
 > been applied from
 > [`python/terraform/frontend-observability/`](../../../python/terraform/frontend-observability/).
 > This copy is here for consistency with this repo's per-language-folder
-> convention — do not `terraform apply` it as-is alongside that one; see the
+> convention, and shares its Terraform state with python's copy (see the
+> `backend` block in `main.tf`) — it can't create a duplicate resource, but
+> python's copy is still where the documented apply workflow lives; see the
 > warning at the top of `main.tf`.
 
 
@@ -17,12 +19,11 @@ working reference example.
 
 ## Usage
 
-This copy is read-only reference — the real apply happens from
+This copy is read-only reference — the documented apply workflow lives in
 [`python/terraform/frontend-observability/`](../../../python/terraform/frontend-observability/)
-(see the warning above). It has no local state of its own, so running
-`terraform plan` or `terraform apply` here would try to create the folder
-and rule group again instead of showing drift against the real ones — don't
-run either from this copy. This is as far as it goes:
+(see the warning above). It shares state with python's copy via the `backend`
+block in `main.tf`, so it isn't at risk of creating a duplicate resource —
+but to keep one clear place to actually operate from, this copy stops here:
 
 ```sh
 cd java/terraform/frontend-observability
@@ -31,8 +32,9 @@ terraform validate
 ```
 
 If you actually need to check for drift or make a change, use
-[python's copy](../../../python/terraform/frontend-observability/README.md#usage),
-which has the state-adoption (`terraform import`) steps this one is missing.
+[python's copy](../../../python/terraform/frontend-observability/README.md#usage)
+— its README documents the state-adoption (`terraform import`) steps for a
+fresh checkout, which apply equally here since the state is shared.
 
 ## What this creates
 

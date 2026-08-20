@@ -5,15 +5,13 @@
 # python/terraform/frontend-observability/, kept here only for consistency
 # with this repo's convention that each language folder is self-contained.
 #
-# The folder + rule group these files describe have ALREADY been applied
-# from python/terraform/frontend-observability/ against wcalldemo. Do NOT
-# run `terraform apply` from more than one language folder — each has its
-# own local state, so a second apply will try to create a second folder with
-# the same title/rule group name and fail (or, if names were changed,
-# produce genuinely duplicate/conflicting rules). If you need to manage this
-# from a different folder than python/, first remove/rename
-# python/terraform/frontend-observability/'s local state or `terraform state
-# mv`/import the existing resources into this directory before applying.
+# This is enforced structurally, not just by convention: the backend block
+# below points this copy's state at python/terraform/frontend-observability's
+# state file, so this directory and python's share the exact same state.
+# Running init/plan/apply from here operates on the same one folder + rule
+# group as python's copy — there is no second state to accidentally create a
+# duplicate resource in. python/'s copy remains the one to use for the actual
+# apply workflow (see its README), but this one is safe, not just discouraged.
 #
 # Provisions Grafana-managed recording rules that let Grafana Cloud's
 # Knowledge Graph (Asserts) discover a `Frontend` entity for the Bookstore
@@ -29,6 +27,10 @@
 
 terraform {
   required_version = ">= 1.9"
+
+  backend "local" {
+    path = "../../../python/terraform/frontend-observability/terraform.tfstate"
+  }
 
   required_providers {
     grafana = {
