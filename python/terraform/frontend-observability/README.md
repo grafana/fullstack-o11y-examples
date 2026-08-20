@@ -8,6 +8,12 @@ working reference example.
 
 ## Usage
 
+⚠️ **The folder and rule group below already exist in `wcalldemo`** (see "What
+this creates"). `terraform.tfstate` is gitignored on purpose — state files can
+carry sensitive data and shouldn't live in git — but that means a fresh clone
+has no record of them, and a naive `plan`/`apply` here will try to create
+duplicates. Import the existing resources into your local state first:
+
 ```sh
 cd python/terraform/frontend-observability
 terraform init
@@ -17,8 +23,18 @@ terraform validate
 # Never write this to a file — export it for this shell session only:
 export TF_VAR_grafana_auth=$(grep '^GRAFANA_CLOUD_API_KEY=' ../../docker-compose/.env.wcalldemo | cut -d= -f2)
 
-terraform plan -out=tfplan   # review what would be created
-terraform apply tfplan       # only after reviewing the plan
+# First time in a fresh checkout: adopt the existing folder + rule group into
+# your local state instead of creating new ones.
+FOLDER_UID=$(curl -s -H "Authorization: Bearer $TF_VAR_grafana_auth" \
+  https://wcalldemo.grafana.net/api/folders \
+  | jq -r '.[] | select(.title=="bookstore-frontend-observability-asserts") | .uid')
+terraform import grafana_folder.frontend_observability_asserts "$FOLDER_UID"
+terraform import grafana_rule_group.frontend_observability_asserts "$FOLDER_UID:frontend-observability-asserts"
+
+terraform plan -out=tfplan   # should show "No changes." once imported —
+                              # if it wants to add/change/destroy something,
+                              # stop and figure out why before applying
+terraform apply tfplan       # only if plan shows a real, intended change
 ```
 
 ## What this creates

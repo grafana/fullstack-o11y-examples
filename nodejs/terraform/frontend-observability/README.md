@@ -17,6 +17,11 @@ working reference example.
 
 ## Usage
 
+This copy is read-only reference — the real apply happens from
+[`python/terraform/frontend-observability/`](../../../python/terraform/frontend-observability/)
+(see the warning above). Use this only to review the config or check it
+against live state for drift; don't run `terraform apply` here.
+
 ```sh
 cd nodejs/terraform/frontend-observability
 terraform init
@@ -26,8 +31,8 @@ terraform validate
 # Never write this to a file — export it for this shell session only:
 export TF_VAR_grafana_auth=$(grep '^GRAFANA_CLOUD_API_KEY=' ../../docker-compose/.env.wcalldemo | cut -d= -f2)
 
-terraform plan -out=tfplan   # review what would be created
-terraform apply tfplan       # only after reviewing the plan
+terraform plan   # read-only — compares this config against live wcalldemo
+                  # state; do not apply from this copy (see warning above)
 ```
 
 ## What this creates
