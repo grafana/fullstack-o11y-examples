@@ -5,8 +5,8 @@ variable "grafana_auth" {
     resources). Never set a default or write this to a file — supply it via
     the TF_VAR_grafana_auth environment variable at plan/apply time, e.g.:
 
-      export TF_VAR_grafana_auth=$(grep '^GRAFANA_CLOUD_API_KEY=' \
-        ../../docker-compose/.env.wcalldemo | cut -d= -f2)
+      export TF_VAR_grafana_auth=$(grep '^GRAFANA_SERVICE_ACCOUNT_TOKEN=' \
+        ../../docker-compose/.env.wcalldemo | cut -d= -f2-)
   EOT
   type        = string
   sensitive   = true

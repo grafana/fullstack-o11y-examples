@@ -21,11 +21,11 @@ terraform validate
 
 # Auth: a Grafana Cloud token for wcalldemo with alerting-rule write scope.
 # Never write this to a file — export it for this shell session only:
-export TF_VAR_grafana_auth=$(grep '^GRAFANA_CLOUD_API_KEY=' ../../docker-compose/.env.wcalldemo | cut -d= -f2)
+export TF_VAR_grafana_auth=$(grep '^GRAFANA_SERVICE_ACCOUNT_TOKEN=' ../../docker-compose/.env.wcalldemo | cut -d= -f2-)
 
 # First time in a fresh checkout: adopt the existing folder + rule group into
 # your local state instead of creating new ones.
-FOLDER_UID=$(curl -s -H "Authorization: Bearer $TF_VAR_grafana_auth" \
+FOLDER_UID=$(curl -fsS -H "Authorization: Bearer $TF_VAR_grafana_auth" \
   https://wcalldemo.grafana.net/api/folders \
   | jq -r '.[] | select(.title=="bookstore-frontend-observability-asserts") | .uid')
 terraform import grafana_folder.frontend_observability_asserts "$FOLDER_UID"
