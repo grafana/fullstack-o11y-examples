@@ -54,14 +54,6 @@ data:
     }
     
     prometheus.remote_write "grafana_cloud" {
-      // Knowledge Graph (Asserts) env + site scope on every remote-written series.
-      // db-o11y exporter metrics carry no OTel resource attributes, so set asserts_env
-      // here too — matching the services' deployment.environment=dev — so DB and app
-      // entities share one env scope and the Service --CONTROLS--> Database link forms.
-      external_labels = {
-        asserts_env  = sys.env("ASSERTS_ENV"),
-        asserts_site = sys.env("ASSERTS_SITE"),
-      }
       endpoint {
         url = sys.env("GCLOUD_PROMETHEUS_URL")
         basic_auth {
@@ -77,12 +69,6 @@ data:
     }
     
     loki.write "grafana_cloud" {
-      // Same KG env/site scope as the metrics remote_write, so db-o11y query-sample
-      // logs (and app logs) match their metrics/entities when filtered by env/site.
-      external_labels = {
-        asserts_env  = sys.env("ASSERTS_ENV"),
-        asserts_site = sys.env("ASSERTS_SITE"),
-      }
       endpoint {
         url = sys.env("GCLOUD_LOKI_URL")
         basic_auth {
@@ -144,15 +130,11 @@ data:
       forward_to = [loki.write.grafana_cloud.receiver]
       // Mirror scope labels onto DB logs for consistent drilldowns.
       rule {
-        target_label = "cluster"
-        replacement  = "dev"
-      }
-      rule {
-        target_label = "asserts_env"
+        target_label = "environment"
         replacement  = sys.env("ASSERTS_ENV")
       }
       rule {
-        target_label = "asserts_site"
+        target_label = "site"
         replacement  = sys.env("ASSERTS_SITE")
       }
       rule {
@@ -167,12 +149,13 @@ data:
     
     discovery.relabel "dbo11y_mysql" {
       targets = database_observability.mysql.bookstore_mysql.targets
-      // cluster lets the built-in Asserts entity rules (entities_dbo11y.yml /
-      // entities_postgresql.yml) discover the Database entity and the
-      // Service --CONTROLS--> Database relationship with no custom YAML.
       rule {
-        target_label = "cluster"
-        replacement  = "dev"
+        target_label = "environment"
+        replacement  = sys.env("ASSERTS_ENV")
+      }
+      rule {
+        target_label = "site"
+        replacement  = sys.env("ASSERTS_SITE")
       }
       rule {
         target_label = "job"
@@ -245,15 +228,11 @@ data:
       forward_to = [loki.write.grafana_cloud.receiver]
       // Mirror scope labels onto DB logs for consistent drilldowns.
       rule {
-        target_label = "cluster"
-        replacement  = "dev"
-      }
-      rule {
-        target_label = "asserts_env"
+        target_label = "environment"
         replacement  = sys.env("ASSERTS_ENV")
       }
       rule {
-        target_label = "asserts_site"
+        target_label = "site"
         replacement  = sys.env("ASSERTS_SITE")
       }
       rule {
@@ -268,12 +247,13 @@ data:
     
     discovery.relabel "dbo11y_postgres" {
       targets = database_observability.postgres.bookstore_postgres.targets
-      // cluster lets the built-in Asserts entity rules (entities_dbo11y.yml /
-      // entities_postgresql.yml) discover the Database entity and the
-      // Service --CONTROLS--> Database relationship with no custom YAML.
       rule {
-        target_label = "cluster"
-        replacement  = "dev"
+        target_label = "environment"
+        replacement  = sys.env("ASSERTS_ENV")
+      }
+      rule {
+        target_label = "site"
+        replacement  = sys.env("ASSERTS_SITE")
       }
       rule {
         target_label = "job"
