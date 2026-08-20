@@ -39,9 +39,9 @@ resource "grafana_rule_group" "frontend_observability_asserts" {
     }
 
     labels = {
-      asserts_entity_type = "Frontend"
+      asserts_entity_type  = "Frontend"
       asserts_request_type = "ttfb"
-      asserts_source = "feo11y"
+      asserts_source       = "feo11y"
     }
     is_paused = false
 
@@ -68,9 +68,9 @@ resource "grafana_rule_group" "frontend_observability_asserts" {
     }
 
     labels = {
-      asserts_entity_type = "Frontend"
+      asserts_entity_type  = "Frontend"
       asserts_request_type = "lcp"
-      asserts_source = "feo11y"
+      asserts_source       = "feo11y"
     }
     is_paused = false
 
@@ -97,9 +97,9 @@ resource "grafana_rule_group" "frontend_observability_asserts" {
     }
 
     labels = {
-      asserts_entity_type = "Frontend"
+      asserts_entity_type  = "Frontend"
       asserts_request_type = "lcp"
-      asserts_source = "feo11y"
+      asserts_source       = "feo11y"
     }
     is_paused = false
 
@@ -126,9 +126,9 @@ resource "grafana_rule_group" "frontend_observability_asserts" {
     }
 
     labels = {
-      asserts_entity_type = "Frontend"
+      asserts_entity_type  = "Frontend"
       asserts_request_type = "navigation"
-      asserts_source = "feo11y"
+      asserts_source       = "feo11y"
     }
     is_paused = false
 
@@ -155,9 +155,9 @@ resource "grafana_rule_group" "frontend_observability_asserts" {
     }
 
     labels = {
-      asserts_entity_type = "Frontend"
+      asserts_entity_type  = "Frontend"
       asserts_request_type = "fcp"
-      asserts_source = "feo11y"
+      asserts_source       = "feo11y"
     }
     is_paused = false
 
@@ -184,10 +184,10 @@ resource "grafana_rule_group" "frontend_observability_asserts" {
     }
 
     labels = {
-      asserts_entity_type = "Frontend"
-      asserts_error_type = "user_action_errors"
+      asserts_entity_type  = "Frontend"
+      asserts_error_type   = "user_action_errors"
       asserts_request_type = "user_action"
-      asserts_source = "feo11y"
+      asserts_source       = "feo11y"
     }
     is_paused = false
 
@@ -215,8 +215,8 @@ resource "grafana_rule_group" "frontend_observability_asserts" {
 
     labels = {
       asserts_entity_type = "Frontend"
-      asserts_error_type = "page_errors"
-      asserts_source = "feo11y"
+      asserts_error_type  = "page_errors"
+      asserts_source      = "feo11y"
     }
     is_paused = false
 
@@ -244,8 +244,8 @@ resource "grafana_rule_group" "frontend_observability_asserts" {
 
     labels = {
       asserts_entity_type = "Frontend"
-      asserts_error_type = "http_client_errors"
-      asserts_source = "feo11y"
+      asserts_error_type  = "http_client_errors"
+      asserts_source      = "feo11y"
     }
     is_paused = false
 
@@ -273,8 +273,8 @@ resource "grafana_rule_group" "frontend_observability_asserts" {
 
     labels = {
       asserts_entity_type = "Frontend"
-      asserts_error_type = "http_network_errors"
-      asserts_source = "feo11y"
+      asserts_error_type  = "http_network_errors"
+      asserts_source      = "feo11y"
     }
     is_paused = false
 
@@ -302,8 +302,8 @@ resource "grafana_rule_group" "frontend_observability_asserts" {
 
     labels = {
       asserts_entity_type = "Frontend"
-      asserts_error_type = "http_server_errors"
-      asserts_source = "feo11y"
+      asserts_error_type  = "http_server_errors"
+      asserts_source      = "feo11y"
     }
     is_paused = false
 
@@ -330,9 +330,9 @@ resource "grafana_rule_group" "frontend_observability_asserts" {
     }
 
     labels = {
-      asserts_entity_type = "Frontend"
+      asserts_entity_type  = "Frontend"
       asserts_request_type = "inp"
-      asserts_source = "feo11y"
+      asserts_source       = "feo11y"
     }
     is_paused = false
 
@@ -359,9 +359,9 @@ resource "grafana_rule_group" "frontend_observability_asserts" {
     }
 
     labels = {
-      asserts_entity_type = "Frontend"
+      asserts_entity_type  = "Frontend"
       asserts_request_type = "cls"
-      asserts_source = "feo11y"
+      asserts_source       = "feo11y"
     }
     is_paused = false
 
@@ -388,9 +388,9 @@ resource "grafana_rule_group" "frontend_observability_asserts" {
     }
 
     labels = {
-      asserts_entity_type = "Frontend"
+      asserts_entity_type  = "Frontend"
       asserts_request_type = "navigation"
-      asserts_source = "feo11y"
+      asserts_source       = "feo11y"
     }
     is_paused = false
 
@@ -417,9 +417,9 @@ resource "grafana_rule_group" "frontend_observability_asserts" {
     }
 
     labels = {
-      asserts_entity_type = "Frontend"
+      asserts_entity_type  = "Frontend"
       asserts_request_type = "user_action"
-      asserts_source = "feo11y"
+      asserts_source       = "feo11y"
     }
     is_paused = false
 
@@ -446,9 +446,9 @@ resource "grafana_rule_group" "frontend_observability_asserts" {
     }
 
     labels = {
-      asserts_entity_type = "Frontend"
+      asserts_entity_type  = "Frontend"
       asserts_request_type = "resource"
-      asserts_source = "feo11y"
+      asserts_source       = "feo11y"
     }
     is_paused = false
 
@@ -474,7 +474,7 @@ resource "grafana_rule_group" "frontend_observability_asserts" {
       model          = "{\"datasource\":{\"type\":\"loki\",\"uid\":\"grafanacloud-logs\"},\"expr\":\"count(count_over_time({kind=\\\"exception\\\", app_id=\\\"${var.faro_app_id}\\\"} | logfmt [5m])) by (service_name, value_template, attribute_value_template, type, hash, attribute_hash)\",\"intervalMs\":1800000,\"maxDataPoints\":50000,\"queryType\":\"instant\",\"refId\":\"A\"}"
     }
 
-    labels = {}
+    labels    = {}
     is_paused = false
 
     record {
@@ -501,8 +501,8 @@ resource "grafana_rule_group" "frontend_observability_asserts" {
 
     labels = {
       asserts_entity_type = "Frontend"
-      asserts_error_type = "http_errors"
-      asserts_source = "feo11y"
+      asserts_error_type  = "http_errors"
+      asserts_source      = "feo11y"
     }
     is_paused = false
 
