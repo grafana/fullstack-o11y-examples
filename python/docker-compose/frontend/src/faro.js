@@ -32,8 +32,7 @@ if (!url || url.includes("<")) {
     app: {
       name: "Bookstore",
       version: "1.0.0",
-      //environment: import.meta.env.VITE_ASSERTS_ENV || "dev", // deployment_environment / asserts_env
-      environment: "dev"
+      environment: import.meta.env.VITE_ASSERTS_ENV || "dev", // deployment_environment / asserts_env
     },
     instrumentations: [
       ...getWebInstrumentations(),
