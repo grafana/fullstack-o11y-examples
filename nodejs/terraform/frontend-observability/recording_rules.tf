@@ -384,7 +384,7 @@ resource "grafana_rule_group" "frontend_observability_asserts" {
       }
 
       datasource_uid = "grafanacloud-logs"
-      model          = "{\"datasource\":{\"type\":\"loki\",\"uid\":\"grafanacloud-logs\"},\"expr\":\"label_replace(quantile_over_time(0.75, {kind=\\\"event\\\"} |= \\\"event_name=faro.performance.navigation\\\" | logfmt | unwrap event_data_duration [5m]) by (service_name, page_id, deployment_environment), \\\"service\\\", \\\"$1\\\", \\\"service_name\\\", \\\"(.+)\\\")\",\"intervalMs\":1800000,\"maxDataPoints\":50000,\"queryType\":\"instant\",\"refId\":\"A\"}"
+      model          = "{\"datasource\":{\"type\":\"loki\",\"uid\":\"grafanacloud-logs\"},\"expr\":\"label_replace(label_replace(quantile_over_time(0.75, {kind=\\\"event\\\"} |= \\\"event_name=faro.performance.navigation\\\" | logfmt | unwrap event_data_duration [5m]) by (service_name, page_id, deployment_environment), \\\"service\\\", \\\"$1\\\", \\\"service_name\\\", \\\"(.+)\\\"), \\\"asserts_request_context\\\", \\\"$1\\\", \\\"page_id\\\", \\\"(.+)\\\")\",\"intervalMs\":1800000,\"maxDataPoints\":50000,\"queryType\":\"instant\",\"refId\":\"A\"}"
     }
 
     labels = {
@@ -413,7 +413,7 @@ resource "grafana_rule_group" "frontend_observability_asserts" {
       }
 
       datasource_uid = "grafanacloud-logs"
-      model          = "{\"datasource\":{\"type\":\"loki\",\"uid\":\"grafanacloud-logs\"},\"expr\":\"label_replace(quantile_over_time(0.75, {kind=\\\"event\\\"} |= \\\"event_name=faro.user.action\\\" | logfmt | unwrap event_data_userActionDuration [5m]) by (service_name, page_id, deployment_environment, action_name), \\\"service\\\", \\\"$1\\\", \\\"service_name\\\", \\\"(.+)\\\")\",\"intervalMs\":1800000,\"maxDataPoints\":50000,\"queryType\":\"instant\",\"refId\":\"A\"}"
+      model          = "{\"datasource\":{\"type\":\"loki\",\"uid\":\"grafanacloud-logs\"},\"expr\":\"label_replace(label_replace(quantile_over_time(0.75, {kind=\\\"event\\\"} |= \\\"event_name=faro.user.action\\\" | logfmt | unwrap event_data_userActionDuration [5m]) by (service_name, page_id, deployment_environment, action_name), \\\"service\\\", \\\"$1\\\", \\\"service_name\\\", \\\"(.+)\\\"), \\\"asserts_request_context\\\", \\\"$1\\\", \\\"page_id\\\", \\\"(.+)\\\")\",\"intervalMs\":1800000,\"maxDataPoints\":50000,\"queryType\":\"instant\",\"refId\":\"A\"}"
     }
 
     labels = {
@@ -442,7 +442,7 @@ resource "grafana_rule_group" "frontend_observability_asserts" {
       }
 
       datasource_uid = "grafanacloud-logs"
-      model          = "{\"datasource\":{\"type\":\"loki\",\"uid\":\"grafanacloud-logs\"},\"expr\":\"label_replace(quantile_over_time(0.75, {kind=\\\"event\\\"} |= \\\"event_name=faro.performance.resource\\\" |~ \\\"event_data_initiatorType=fetch|event_data_initiatorType=xmlhttprequest\\\" | logfmt | unwrap event_data_duration [5m]) by (service_name, page_id, deployment_environment), \\\"service\\\", \\\"$1\\\", \\\"service_name\\\", \\\"(.+)\\\")\",\"intervalMs\":1800000,\"maxDataPoints\":50000,\"queryType\":\"instant\",\"refId\":\"A\"}"
+      model          = "{\"datasource\":{\"type\":\"loki\",\"uid\":\"grafanacloud-logs\"},\"expr\":\"label_replace(label_replace(quantile_over_time(0.75, {kind=\\\"event\\\"} |= \\\"event_name=faro.performance.resource\\\" |~ \\\"event_data_initiatorType=fetch|event_data_initiatorType=xmlhttprequest\\\" | logfmt | unwrap event_data_duration [5m]) by (service_name, page_id, deployment_environment), \\\"service\\\", \\\"$1\\\", \\\"service_name\\\", \\\"(.+)\\\"), \\\"asserts_request_context\\\", \\\"$1\\\", \\\"page_id\\\", \\\"(.+)\\\")\",\"intervalMs\":1800000,\"maxDataPoints\":50000,\"queryType\":\"instant\",\"refId\":\"A\"}"
     }
 
     labels = {
