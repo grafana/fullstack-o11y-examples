@@ -1,3 +1,13 @@
 -r ../common/base-requirements.txt
 PyMySQL==1.1.1
-cryptography==50.0.0
+# Pinned below 49.0.0 -- which fixed a HIGH-severity CVE (see the
+# fix(security/high/...) update-to-v50 commits) -- as a deliberate, temporary
+# trade-off: cryptography's arm64 wheel has an open, currently-unfixed
+# upstream bug where importing cryptography.hazmat.bindings._rust raises
+# "Illegal instruction" (SIGILL) under virtualization (confirmed on this
+# repo's podman-machine setup on Apple Silicon; not fixed as of 50.0.0, the
+# latest release). See https://github.com/pyca/cryptography/issues/14733.
+# Revert to >=49.0.0 once that's fixed upstream, or switch these services to
+# platform: linux/amd64 in docker-compose.yml instead (tested working there
+# with cryptography==50.0.0, at the cost of QEMU emulation overhead).
+cryptography==46.0.3
