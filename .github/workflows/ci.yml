@@ -135,6 +135,9 @@ jobs:
       - name: Build
         if: matrix.build
         run: npm run build
+      - name: Test
+        if: ${{ !matrix.build }}
+        run: npm test
       - name: Syntax-check sources
         if: ${{ !matrix.build }}
         run: |

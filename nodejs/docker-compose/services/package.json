@@ -4,6 +4,9 @@
   "description": "Node.js bookstore backend services (products, checkout, shipping) instrumented with OpenTelemetry + SQLCommenter.",
   "private": true,
   "type": "commonjs",
+  "scripts": {
+    "test": "node --test"
+  },
   "dependencies": {
     "@opentelemetry/api": "^1.9.0",
     "@opentelemetry/exporter-trace-otlp-grpc": "^0.221.0",

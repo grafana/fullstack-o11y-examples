@@ -10,6 +10,7 @@
 
 const express = require('express');
 const mysql = require('mysql2/promise');
+const { listen } = require('../common/listen');
 const { postJson } = require('./shipping_client');
 
 const app = express();
@@ -137,4 +138,4 @@ app.use((err, _req, res, _next) => {
   res.status(500).json({ error: 'internal error' });
 });
 
-app.listen(port, '0.0.0.0', () => console.log(`checkout listening on ${port}`));
+listen(app, port, 'checkout');
