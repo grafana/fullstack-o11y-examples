@@ -3,6 +3,7 @@
 
 const express = require('express');
 const mysql = require('mysql2/promise');
+const { listen } = require('../common/listen');
 
 const app = express();
 const port = parseInt(process.env.SERVICE_PORT || '8001', 10);
@@ -54,4 +55,4 @@ app.use((err, _req, res, _next) => {
   res.status(500).json({ error: 'internal error' });
 });
 
-app.listen(port, '0.0.0.0', () => console.log(`products listening on ${port}`));
+listen(app, port, 'products');
