@@ -5,11 +5,11 @@
 # (see closed PR #23). Renovate is constrained to <82 in renovate.json.
 setuptools==75.1.0
 # requests is instrumented by otel_setup for all services (not just checkout).
-requests==2.33.0
+requests==2.34.2
 Flask==3.1.3
-flask-cors==6.0.0
+flask-cors==6.0.5
 gunicorn==26.2.0
-SQLAlchemy==2.0.51
+SQLAlchemy==2.0.52
 opentelemetry-sdk==1.27.0
 opentelemetry-exporter-otlp-proto-grpc==1.27.0
 opentelemetry-instrumentation-flask==0.48b0
