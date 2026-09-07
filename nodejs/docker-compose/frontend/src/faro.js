@@ -30,7 +30,7 @@ if (!url || url.includes("<")) {
   initializeFaro({
     url,
     app: {
-      name: "bookstore-frontend",
+      name: "Bookstore",
       version: "1.0.0",
       environment: import.meta.env.VITE_ASSERTS_ENV || "dev", // deployment_environment / asserts_env
     },
