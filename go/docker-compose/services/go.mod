@@ -1,6 +1,6 @@
 module bookstore
 
-go 1.25.0
+go 1.26.0
 
 // Dependency versions are resolved by `go mod tidy` (run during the Docker build
 // and CI). Listed here so the module is buildable offline once go.sum exists.
@@ -40,7 +40,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.46.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.11.0 // indirect
 	golang.org/x/net v0.58.0 // indirect
-	golang.org/x/sys v0.47.0 // indirect
+	golang.org/x/sys v0.48.0 // indirect
 	golang.org/x/text v0.41.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260904194346-d0f1323225a4 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260904194346-d0f1323225a4 // indirect
