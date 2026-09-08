@@ -12,7 +12,7 @@
 
 const { NodeSDK } = require('@opentelemetry/sdk-node');
 const { OTLPTraceExporter } = require('@opentelemetry/exporter-trace-otlp-grpc');
-const { Resource } = require('@opentelemetry/resources');
+const { resourceFromAttributes } = require('@opentelemetry/resources');
 const { ATTR_SERVICE_NAME } = require('@opentelemetry/semantic-conventions');
 const { HttpInstrumentation } = require('@opentelemetry/instrumentation-http');
 const { ExpressInstrumentation } = require('@opentelemetry/instrumentation-express');
@@ -23,7 +23,7 @@ const { startProfiling } = require('./profiling');
 const serviceName = process.env.OTEL_SERVICE_NAME || 'bookstore-service';
 
 const sdk = new NodeSDK({
-  resource: new Resource({ [ATTR_SERVICE_NAME]: serviceName }),
+  resource: resourceFromAttributes({ [ATTR_SERVICE_NAME]: serviceName }),
   traceExporter: new OTLPTraceExporter(),
   instrumentations: [
     new HttpInstrumentation(),
