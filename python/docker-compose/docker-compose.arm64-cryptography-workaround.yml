@@ -1,0 +1,10 @@
+services:
+  products:
+    # Opt-in workaround for pyca/cryptography#14733 on Apple Silicon
+    # virtualization. Keeps the shared requirements on patched cryptography.
+    platform: linux/amd64
+
+  checkout:
+    # Uses QEMU emulation; only enable when native arm64 workers SIGILL while
+    # importing cryptography.hazmat.bindings._rust.
+    platform: linux/amd64

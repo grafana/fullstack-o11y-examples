@@ -11,6 +11,15 @@ cp .env.example .env          # fill in Grafana Cloud + Faro values
 docker compose up --build     # first run seeds both databases
 ```
 
+On Apple Silicon virtualization setups affected by
+[`pyca/cryptography#14733`](https://github.com/pyca/cryptography/issues/14733),
+keep the patched default dependency set and opt into amd64 emulation for the
+two MySQL-backed services instead:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.arm64-cryptography-workaround.yml up --build
+```
+
 | Component | URL |
 |-----------|-----|
 | Storefront (nginx + React) | http://localhost:8080 |

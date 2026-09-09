@@ -1,0 +1,26 @@
+[
+  {
+    "name": "network_and_client",
+    "network": 1,
+    "client": 2,
+    "server": 0,
+    "total": 100,
+    "expected_ratio": 0.03
+  },
+  {
+    "name": "network_and_server",
+    "network": 1,
+    "client": 0,
+    "server": 3,
+    "total": 100,
+    "expected_ratio": 0.04
+  },
+  {
+    "name": "client_and_server",
+    "network": 0,
+    "client": 2,
+    "server": 3,
+    "total": 100,
+    "expected_ratio": 0.05
+  }
+]
