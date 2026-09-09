@@ -11,6 +11,9 @@ ENV VITE_FARO_ENDPOINT=$VITE_FARO_ENDPOINT
 # Deployment environment for Faro app.environment (deployment_environment / asserts_env).
 ARG VITE_ASSERTS_ENV
 ENV VITE_ASSERTS_ENV=$VITE_ASSERTS_ENV
+# Session Replay opt-in (see faro.js) — also inlined at build time.
+ARG VITE_SESSION_REPLAY
+ENV VITE_SESSION_REPLAY=$VITE_SESSION_REPLAY
 RUN npm run build
 
 # ─── Serve stage ────────────────────────────────────────────────────────────────

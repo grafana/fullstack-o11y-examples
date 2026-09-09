@@ -12,6 +12,7 @@ import {
   ReactRouterVersion,
 } from "@grafana/faro-react";
 import { TracingInstrumentation } from "@grafana/faro-web-tracing";
+import { ReplayInstrumentation } from "@grafana/faro-instrumentation-replay";
 
 // Grafana Faro for frontend observability, via @grafana/faro-react. Initializes as
 // a side effect so this module can be the first import in main.jsx — capturing
@@ -22,7 +23,18 @@ import { TracingInstrumentation } from "@grafana/faro-web-tracing";
 // via <FaroRoutes>) and backs the <FaroErrorBoundary>. TracingInstrumentation
 // propagates W3C traceparent on same-origin /api calls, linking browser spans to
 // the backend service + SQL spans in one distributed trace.
+//
+// Session Replay (ReplayInstrumentation) is opt-in via VITE_SESSION_REPLAY=1 —
+// deliberately separate from the VITE_FARO_ENDPOINT switch above, since enabling
+// it makes you responsible for disclosing session recording to end users and
+// getting any consent required by applicable law. It also requires Session
+// Replay to be enabled on your Grafana Cloud stack first (a support enablement
+// request, not a code change) before recordings appear. Defaults mask all input
+// values and text content client-side before anything leaves the browser; see
+// https://grafana.com/docs/grafana-cloud/observe-and-act/monitor-applications/session-replay/
+// before loosening that (or enabling this at all) in production.
 const url = import.meta.env.VITE_FARO_ENDPOINT;
+const sessionReplayEnabled = import.meta.env.VITE_SESSION_REPLAY === "1";
 
 if (!url || url.includes("<")) {
   console.info("[faro] disabled — set VITE_FARO_ENDPOINT to your Grafana Cloud collector URL to enable");
@@ -37,6 +49,7 @@ if (!url || url.includes("<")) {
     instrumentations: [
       ...getWebInstrumentations(),
       new TracingInstrumentation(),
+      ...(sessionReplayEnabled ? [new ReplayInstrumentation()] : []),
       new ReactIntegration({
         router: {
           version: ReactRouterVersion.V7,
