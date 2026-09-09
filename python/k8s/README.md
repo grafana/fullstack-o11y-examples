@@ -14,10 +14,18 @@ Grafana Alloy → Grafana Cloud.
    docker build -t <registry>/bookstore/checkout:latest -f services/checkout/Dockerfile services
    docker build -t <registry>/bookstore/shipping:latest -f services/shipping/Dockerfile services
    docker build -t <registry>/bookstore/frontend:latest \
-     --build-arg VITE_FARO_ENDPOINT=... --build-arg VITE_ASSERTS_ENV=dev \
-     --build-arg VITE_SESSION_REPLAY=1 frontend  # omit the last arg (or use =0) to keep it disabled
+     --build-arg VITE_FARO_ENDPOINT=... --build-arg VITE_ASSERTS_ENV=dev frontend
    docker push <registry>/bookstore/{products,checkout,shipping,frontend}:latest
    ```
+
+   **Session Replay (opt-in, off by default)** — separate from Faro above.
+   Enabling it makes you responsible for disclosing session recording to end
+   users and getting any consent required by applicable law, and requires
+   Session Replay to be enabled on your Grafana Cloud stack first (a support
+   enablement request — see the Quickstart doc's Step 1, not a code change):
+   https://grafana.com/docs/grafana-cloud/observe-and-act/monitor-applications/session-replay/quickstart/
+   Once both are true, add `--build-arg VITE_SESSION_REPLAY=1` to the frontend
+   build command above, then rebuild, push, and redeploy just that image.
 
    Then update the `image:` fields in `services/backends.yaml` and
    `frontend/deployment.yaml` to your registry. (For kind/minikube you can load
