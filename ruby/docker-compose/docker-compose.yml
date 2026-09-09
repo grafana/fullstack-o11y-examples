@@ -183,6 +183,7 @@ services:
       args:
         VITE_FARO_ENDPOINT: ${VITE_FARO_ENDPOINT:-}
         VITE_ASSERTS_ENV: ${ASSERTS_ENV:-dev}
+        VITE_SESSION_REPLAY: ${VITE_SESSION_REPLAY:-}
     container_name: bookstore-frontend
     ports:
       - "8080:80"

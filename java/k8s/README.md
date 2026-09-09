@@ -16,7 +16,8 @@ avoid colliding with the Python images.
    docker build -t <registry>/bookstore-java/checkout:latest services/checkout
    docker build -t <registry>/bookstore-java/shipping:latest services/shipping
    docker build -t <registry>/bookstore-java/frontend:latest \
-     --build-arg VITE_FARO_ENDPOINT=... --build-arg VITE_ASSERTS_ENV=dev frontend
+     --build-arg VITE_FARO_ENDPOINT=... --build-arg VITE_ASSERTS_ENV=dev \
+     --build-arg VITE_SESSION_REPLAY=1 frontend  # omit the last arg (or use =0) to keep it disabled
    docker push <registry>/bookstore-java/{products,checkout,shipping,frontend}:latest
    ```
 

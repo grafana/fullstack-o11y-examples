@@ -16,7 +16,8 @@ to avoid colliding with the other language images.
    docker build -t <registry>/bookstore-nodejs/checkout:latest -f services/checkout/Dockerfile services
    docker build -t <registry>/bookstore-nodejs/shipping:latest -f services/shipping/Dockerfile services
    docker build -t <registry>/bookstore-nodejs/frontend:latest \
-     --build-arg VITE_FARO_ENDPOINT=... --build-arg VITE_ASSERTS_ENV=dev frontend
+     --build-arg VITE_FARO_ENDPOINT=... --build-arg VITE_ASSERTS_ENV=dev \
+     --build-arg VITE_SESSION_REPLAY=1 frontend  # omit the last arg (or use =0) to keep it disabled
    docker push <registry>/bookstore-nodejs/{products,checkout,shipping,frontend}:latest
    ```
 
