@@ -16,7 +16,7 @@ require (
 )
 
 require (
-	github.com/XSAM/otelsql v0.43.0
+	github.com/XSAM/otelsql v0.44.0
 	github.com/google/sqlcommenter/go/core v0.1.2
 	github.com/google/sqlcommenter/go/database/sql v0.1.1
 	github.com/grafana/otel-profiling-go v0.6.0
