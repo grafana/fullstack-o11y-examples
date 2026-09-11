@@ -49,7 +49,7 @@ if (!url || url.includes("<")) {
     instrumentations: [
       ...getWebInstrumentations(),
       new TracingInstrumentation(),
-      ...(sessionReplayEnabled ? [new ReplayInstrumentation()] : []),
+      ...(sessionReplayEnabled ? [new ReplayInstrumentation({ inlineStylesheet: true })] : []),
       new ReactIntegration({
         router: {
           version: ReactRouterVersion.V7,
