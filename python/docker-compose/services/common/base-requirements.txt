@@ -18,5 +18,5 @@ opentelemetry-instrumentation-sqlalchemy==0.65b0
 # Pyroscope continuous profiling (CPU sampler + OTel span processor). Installed
 # in every image but a no-op unless PYROSCOPE_SERVER_ADDRESS is set — see
 # common/pyroscope_setup.py.
-pyroscope-io==1.2.1
+pyroscope-io==1.2.3
 pyroscope-otel==1.1.0
