@@ -1,5 +1,5 @@
 # ─── Build stage ──────────────────────────────────────────────────────────────
-FROM node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293 AS build
+FROM node:24-alpine@sha256:e67514e5d0f6c46656005e1b693b2ec9d52e80b641307de684d4a015ba7a4eaf AS build
 WORKDIR /app
 COPY package.json ./
 RUN npm install
@@ -11,6 +11,9 @@ ENV VITE_FARO_ENDPOINT=$VITE_FARO_ENDPOINT
 # Deployment environment for Faro app.environment (deployment_environment / asserts_env).
 ARG VITE_ASSERTS_ENV
 ENV VITE_ASSERTS_ENV=$VITE_ASSERTS_ENV
+# Session Replay opt-in (see faro.js) — also inlined at build time.
+ARG VITE_SESSION_REPLAY
+ENV VITE_SESSION_REPLAY=$VITE_SESSION_REPLAY
 RUN npm run build
 
 # ─── Serve stage ────────────────────────────────────────────────────────────────

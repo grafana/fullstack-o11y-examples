@@ -1,5 +1,5 @@
 # Build context is ./services so the shared `common/` code and Gemfile are available.
-FROM ruby:3.4-slim@sha256:66ce991f12c58f5038c9f7c34df36d624d10c84500b748a7036c621c43cf154e
+FROM ruby:4.0-slim@sha256:58479f164d5947f852da27a4436c89bb986a811f959c40552bc7f6ccaabcc9c9
 WORKDIR /app
 
 # Native build deps for mysql2 + pg gems.

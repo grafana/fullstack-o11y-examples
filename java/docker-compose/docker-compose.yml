@@ -16,7 +16,7 @@ x-pyroscope-env: &pyroscope_env
 
 services:
   mysql:
-    image: mysql:8.4@sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb
+    image: mysql:26.7@sha256:66aec17cd21a956029b83f083b813073859e8355dc1a00e55df6ba02f0e32345
     container_name: bookstore-mysql
     ports:
       - "3306:3306"
@@ -70,7 +70,7 @@ services:
     networks: [bookstore]
 
   alloy:
-    image: grafana/alloy:v1.18.1@sha256:0f4434c92b3e6cdac38bb129b344e1790c246f7b6e2eaffcc16a5fa363240e33
+    image: grafana/alloy:v1.19.2@sha256:b8ec653c44235fbe910879145dac3597d66b0aaecf60bcbbe82580767771a839
     container_name: bookstore-alloy
     ports:
       - "4317:4317"   # OTLP gRPC
@@ -212,6 +212,7 @@ services:
       args:
         VITE_FARO_ENDPOINT: ${VITE_FARO_ENDPOINT:-}
         VITE_ASSERTS_ENV: ${ASSERTS_ENV:-dev}
+        VITE_SESSION_REPLAY: ${VITE_SESSION_REPLAY:-}
     container_name: bookstore-frontend
     ports:
       - "8080:80"

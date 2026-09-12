@@ -6,7 +6,9 @@
   "rebaseWhen": "behind-base-branch",
   "platformAutomerge": false,
   "vulnerabilityAlerts": {
-    "groupName": "{{#if isMajor}}{{{packageFileDir}}} {{{depNameSanitized}}} security major{{else}}{{{manager}}} security non-major{{/if}}"
+    "description": "Group security updates. For majors: drop packageFileDir from the group key so a single dep bumped across all 5 language frontends lands in ONE PR instead of five. The three lockstep sets (vite+@vitejs/plugin-react, react-router-dom+@grafana/faro-react+@grafana/faro-web-tracing, and any PyPI opentelemetry-* package) map to the SAME group name their non-security partners use in packageRules below — vulnerabilityAlerts force-overrides packageRules for security branches, so the security-flagged member must resolve its group name here to share a branch with its partners' bump. The opentelemetry-* check runs before the isMajor branch because that packageRule groups every update type, not just majors — a non-major security alert on a PyPI OTel package needs the same 'python opentelemetry' group as its unaffected companions, or it splits into 'pip_requirements security non-major' and recreates the unresolvable partial bump. Gated on datasource == pypi: 'opentelemetry-' also matches Ruby (Bundler) and Maven package names in this repo, which must NOT be pulled into the Python group. The generic major-security fallback is keyed on {datasource, depNameSanitized} rather than depNameSanitized alone, for the same cross-ecosystem reason — this repo has same-named packages (mysql2, pg) in both npm and Rubygems, which would otherwise collide into one branch and let an unrelated ecosystem's failure block both remediations. vulnerabilityFixStrategy 'highest' (Renovate's default is 'lowest') must live HERE, not on any packageRule: Renovate's vulnerability-alert init (lib/workers/repository/init/vulnerability.ts) builds a synthetic per-package rule with `force: {...config.vulnerabilityAlerts}` sourced only from this top-level object, and mergeChildConfig flattens `force` onto the plain `vulnerabilityFixStrategy` key the lookup worker actually reads (lib/workers/repository/process/lookup/index.ts) — a nested `packageRules[].vulnerabilityAlerts.vulnerabilityFixStrategy` is never picked up (confirmed against the real renovate@43.288.0 source and package-rules resolver). This is a deliberate, accepted trade-off: it also applies 'highest' to Go/Java/Node/Ruby security alerts, since Renovate has no way to scope vulnerabilityFixStrategy per package — the alternative (leaving it 'lowest') lets an alerted OTel package settle on a version its grouped, pinned companions don't support (see the python-opentelemetry packageRule below), reintroducing the exact unresolvable partial-bump this whole grouping scheme exists to prevent.",
+    "vulnerabilityFixStrategy": "highest",
+    "groupName": "{{#if (and (containsString depName \"opentelemetry-\") (equals datasource \"pypi\"))}}python opentelemetry{{else}}{{#if isMajor}}{{#if (or (equals depName \"vite\") (equals depName \"@vitejs/plugin-react\"))}}frontend vite + plugin-react{{else}}{{#if (or (equals depName \"react-router-dom\") (or (equals depName \"@grafana/faro-react\") (equals depName \"@grafana/faro-web-tracing\")))}}frontend react-router + faro-react{{else}}{{{datasource}}} {{{depNameSanitized}}} security major{{/if}}{{/if}}{{else}}{{{manager}}} security non-major{{/if}}{{/if}}"
   },
   "lockFileMaintenance": {
     "enabled": true,
@@ -74,6 +76,29 @@
       "matchManagers": ["pip_requirements", "pip-compile", "pep621", "poetry"],
       "matchPackageNames": ["setuptools"],
       "allowedVersions": "<82"
+    },
+    {
+      "description": "Lockstep: vite and @vitejs/plugin-react must bump together on majors. @vitejs/plugin-react's peerDependencies.vite trails vite by a major (e.g. plugin-react v4 peers vite ^4||^5), so bumping vite alone breaks npm's peer-dep resolution (ERESOLVE) at docker build. Grouping both into one major PR — across all 5 language frontends — lets them move together. Placed after the major rule so it keeps automerge:false + needs-manual-review while overriding only the group name; mirrors the vulnerabilityAlerts group so a security-triggered vite major joins the plugin-react major in the same branch.",
+      "matchManagers": ["npm"],
+      "matchPackageNames": ["vite", "@vitejs/plugin-react"],
+      "matchUpdateTypes": ["major"],
+      "groupName": "frontend vite + plugin-react"
+    },
+    {
+      "description": "Lockstep: react-router-dom, @grafana/faro-react, and @grafana/faro-web-tracing must bump together on majors. Faro's peerDependencies.react-router-dom and its ReactRouterVersion enum track the router major (faro-react 1.x peers react-router-dom ^4||^5||^6 and has no V7 enum), so bumping the router alone silently breaks Faro route instrumentation — core to this repo's demo. faro-web-tracing is included too: the app imports TracingInstrumentation from it directly, faro-react's major depends on the matching web-tracing major, and PR #62 upgraded all three together manually — a branch that bumps only the router + faro-react would leave the directly-imported tracing package on its old major, running two Faro/OpenTelemetry stacks side by side. Groups all three into one major PR across all 5 language frontends. NOTE: the bump still needs a manual frontend/src/faro.js change (ReactRouterVersion.V6 -> V7) — hence needs-manual-review from the major rule above.",
+      "matchManagers": ["npm"],
+      "matchPackageNames": ["react-router-dom", "@grafana/faro-react", "@grafana/faro-web-tracing"],
+      "matchUpdateTypes": ["major"],
+      "groupName": "frontend react-router + faro-react"
+    },
+    {
+      "description": "Lockstep: the Python OpenTelemetry SDK/exporter (1.x, e.g. opentelemetry-sdk) and the instrumentation packages (0.x beta, e.g. opentelemetry-instrumentation-flask) share a single opentelemetry-api and MUST bump together — opentelemetry-sdk 1.44 pins opentelemetry-api 1.44 while instrumentation 0.48b0 pins 1.27, so a partial bump is unresolvable (pip ResolutionImpossible). Without this rule the 1.x packages land in 'python non-major' and the 0.x ones in the '0.x manual review' group, producing two PRs that each fail to install. Group all opentelemetry-* pip packages into one manual-review PR so they move as a set. Placed after the 0.x rule so this groupName wins for the 0.x instrumentation packages too. ignoreUnstable:false is required here — Renovate's default (true) skips proposing beta releases like 0.65b0 for the still-0.x instrumentation packages, which silently drops them out of this group and recreates the same unresolvable partial bump this rule exists to prevent (confirmed via a Renovate dry-run: without this flag the instrumentation packages get updates: [] while the SDK/exporter alone move to 1.44.0). vulnerabilityFixStrategy is deliberately NOT set here — Renovate's validator accepts it on a packageRule, but the vulnerability-alert init step only ever forces the flat vulnerabilityFixStrategy field from the top-level vulnerabilityAlerts block (see its description above), so a package-scoped copy here is silently inert; it has to live there instead, even though that also affects other ecosystems. matchPackageNames uses an unanchored /opentelemetry-/ regex (not /^opentelemetry-/) to match the containsString check the vulnerabilityAlerts groupName template above uses for grouping — an anchored regex here would let a hypothetical package like flask-opentelemetry-shim get routed into the 'python opentelemetry' branch by vulnerabilityAlerts while silently missing this rule's automerge:false/needs-manual-review protections.",
+      "matchManagers": ["pip_requirements", "pip-compile", "pep621", "poetry"],
+      "matchPackageNames": ["/opentelemetry-/"],
+      "groupName": "python opentelemetry",
+      "ignoreUnstable": false,
+      "automerge": false,
+      "addLabels": ["needs-manual-review"]
     }
   ]
 }

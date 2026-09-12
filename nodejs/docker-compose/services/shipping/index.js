@@ -6,6 +6,7 @@
 
 const express = require('express');
 const { Pool } = require('pg');
+const { listen } = require('../common/listen');
 
 const app = express();
 app.use(express.json());
@@ -73,4 +74,4 @@ app.use((err, _req, res, _next) => {
   res.status(500).json({ error: 'internal error' });
 });
 
-app.listen(port, '0.0.0.0', () => console.log(`shipping listening on ${port}`));
+listen(app, port, 'shipping');
