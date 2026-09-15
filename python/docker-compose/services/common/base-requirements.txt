@@ -17,7 +17,7 @@ SQLAlchemy==2.0.52
 # supported." >=1.28.0 raises the range to protobuf<8.0,>=5.0, which does.
 # Pin protobuf explicitly rather than rely on the resolver picking a version
 # in range.
-protobuf==7.35.1
+protobuf==7.36.1
 opentelemetry-sdk==1.44.0
 opentelemetry-exporter-otlp-proto-grpc==1.44.0
 opentelemetry-instrumentation-flask==0.65b0
