@@ -13,7 +13,7 @@
     "@opentelemetry/instrumentation-express": "^0.71.0",
     "@opentelemetry/instrumentation-http": "^0.223.0",
     "@opentelemetry/instrumentation-mysql2": "^0.69.0",
-    "@opentelemetry/instrumentation-pg": "^0.75.0",
+    "@opentelemetry/instrumentation-pg": "^0.76.0",
     "@opentelemetry/resources": "^2.0.0",
     "@opentelemetry/sdk-node": "^0.223.0",
     "@opentelemetry/semantic-conventions": "^1.28.0",
