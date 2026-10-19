@@ -1,5 +1,5 @@
 # Build context is ./services (single Go module for all three services).
-FROM golang:1.27@sha256:e0174e51e81218523251d85d248a90d24c3d5e81543b4f07a5d66229397db190 AS build
+FROM golang:1.27@sha256:820153096fda4de6ac1b7194d12e416b7dd8f4e9a33d17e0345b111b945162d8 AS build
 WORKDIR /src
 COPY . .
 RUN CGO_ENABLED=0 go build -o /bin/app ./shipping
