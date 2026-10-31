@@ -16,7 +16,7 @@ x-pyroscope-env: &pyroscope_env
 
 services:
   mysql:
-    image: mysql:26.7@sha256:893418c8a7a34c60d2d961cc30ef136095da141478562ed2101ae3f5faba9c3f
+    image: mysql:26.10@sha256:7b16ec7caa94ca7e92f4c5ec287de69d2e8738db056ceb629022951a6f6d910b
     container_name: bookstore-mysql
     ports:
       - "3306:3306"
@@ -70,7 +70,7 @@ services:
     networks: [bookstore]
 
   alloy:
-    image: grafana/alloy:v1.20.1@sha256:2aa2099af76c0098d4af7a4d6e48f86cb66dc1a000222ad927a1c67c6542d13f
+    image: grafana/alloy:v1.21.2@sha256:89a5a320168387336b9ac3c850609c3ba7757eadd4ae5f1d819deb35e9854b18
     container_name: bookstore-alloy
     ports:
       - "4317:4317"   # OTLP gRPC
