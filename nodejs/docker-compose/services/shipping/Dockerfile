@@ -1,5 +1,5 @@
 # Build context is ./services so the shared `common/` module is available.
-FROM node:24-slim@sha256:a5f4366e834695d5f363b920c104953a535d3a9864d1bdf74566a0ebe01daee5
+FROM node:24-slim@sha256:c86ecead9e55a5210ac1727de38a4ca840bf03dcaf34dc9749addbf383b1920c
 WORKDIR /app
 ENV NODE_ENV=production
 ENV OTEL_SERVICE_NAME=shipping-service
