@@ -18,11 +18,11 @@ SQLAlchemy==2.1.6
 # Pin protobuf explicitly rather than rely on the resolver picking a version
 # in range.
 protobuf==7.36.2
-opentelemetry-sdk==1.45.1
-opentelemetry-exporter-otlp-proto-grpc==1.45.1
-opentelemetry-instrumentation-flask==0.66b1
-opentelemetry-instrumentation-requests==0.66b1
-opentelemetry-instrumentation-sqlalchemy==0.66b1
+opentelemetry-sdk==1.45.2
+opentelemetry-exporter-otlp-proto-grpc==1.45.2
+opentelemetry-instrumentation-flask==0.66b2
+opentelemetry-instrumentation-requests==0.66b2
+opentelemetry-instrumentation-sqlalchemy==0.66b2
 # Pyroscope continuous profiling (CPU sampler + OTel span processor). Installed
 # in every image but a no-op unless PYROSCOPE_SERVER_ADDRESS is set — see
 # common/pyroscope_setup.py.
