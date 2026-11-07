@@ -1,5 +1,5 @@
 # Build stage: compile the Spring Boot fat jar.
-FROM maven:3.10-eclipse-temurin-21@sha256:9b4877723dadf350b452dd97d9a6401e7b56f98fa9dfe420c32ad909989c7e4c AS build
+FROM maven:3.10-eclipse-temurin-21@sha256:9673eef9ed503146591667ffb92eaaa22f1b8899ed60d9df0df4da3f3a1214a6 AS build
 WORKDIR /app
 COPY pom.xml .
 RUN mvn -q -B dependency:go-offline
@@ -7,7 +7,7 @@ COPY src ./src
 RUN mvn -q -B -DskipTests package
 
 # Runtime stage: JRE + OpenTelemetry Java agent for auto-instrumentation.
-FROM eclipse-temurin:25-jre@sha256:fcd7fd7b387f94bb2ac461478a7436ad8e349924c374ea8313919624dceae636
+FROM eclipse-temurin:25-jre@sha256:ecdc0adb37bde1a281c4d245a3cd535004b1fc8322d560f5b09463b248c81df0
 WORKDIR /app
 ADD https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v2.9.0/opentelemetry-javaagent.jar /otel/opentelemetry-javaagent.jar
 # Pyroscope OTel extension: when loaded into the OTel agent it runs the embedded
