@@ -50,3 +50,11 @@ dependency-reduced-pom.xml
 
 # OS
 .DS_Store
+
+# Generated database selections and private Terraform state.
+.sqlserver/
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+**/terraform.tfvars

@@ -1,0 +1,6 @@
+aws_region      = "us-west-1"
+vpc_id          = "vpc-0123456789abcdef0" # Your existing default VPC.
+vpc_cidr        = "172.31.0.0/16"         # Verify your VPC's primary CIDR.
+allowed_cidr    = "203.0.113.10/32"       # Application/Alloy egress IPv4 address.
+master_username = "dbadmin"
+# Supply the password via TF_VAR_master_password rather than committing it.

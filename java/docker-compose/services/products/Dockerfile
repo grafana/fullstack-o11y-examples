@@ -9,7 +9,7 @@ RUN mvn -q -B -DskipTests package
 # Runtime stage: JRE + OpenTelemetry Java agent for auto-instrumentation.
 FROM eclipse-temurin:25-jre@sha256:ecdc0adb37bde1a281c4d245a3cd535004b1fc8322d560f5b09463b248c81df0
 WORKDIR /app
-ADD https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v2.9.0/opentelemetry-javaagent.jar /otel/opentelemetry-javaagent.jar
+ADD https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v2.33.1/opentelemetry-javaagent.jar /otel/opentelemetry-javaagent.jar
 # Pyroscope OTel extension: when loaded into the OTel agent it runs the embedded
 # Pyroscope profiler and tags profiles with span IDs for trace ↔ profile
 # correlation. Only downloaded here — enabling it is the deployment's choice via

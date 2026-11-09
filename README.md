@@ -100,3 +100,16 @@ Follow a single browser interaction all the way down to the SQL query it trigger
 13. Click on the `SELECT` statement listed as the **`db.statement`** span attribute.
 14. You're now automatically directed to the corresponding **Query Samples** in the
     Grafana Cloud **Database Observability** app.
+
+## SQL Server RDS database swaps
+
+Swap MySQL (products/checkout), PostgreSQL (shipping), or both with SQL Server
+RDS in Python, Go, Node.js, Java, and Ruby. The same selections are available
+for Docker Compose and Kubernetes. See the [SQL Server setup guide](sqlserver/README.md)
+for RDS provisioning, credentials, database initialization, and deployment.
+
+```sh
+./scripts/swap-db compose go postgres up --build -d
+./scripts/swap-db compose python mysql up --build -d
+./scripts/swap-db compose nodejs both up --build -d
+```
