@@ -1,0 +1,10 @@
+#!/usr/bin/env python3
+"""Select SQL Server RDS for a language's bookstore, shipping, or both."""
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "sqlserver/tools"))
+from cli import main
+
+if __name__ == "__main__":
+    sys.exit(main())

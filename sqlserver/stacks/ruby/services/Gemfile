@@ -1,0 +1,30 @@
+# All gems for the three bookstore services (shared build context ./services).
+source "https://rubygems.org"
+
+ruby ">= 3.3"
+
+# Web framework + server
+gem "sinatra", "~> 4.1"
+gem "rackup", "~> 2.2"
+gem "puma", "~> 7.0"
+
+# Database access
+gem "sequel", "~> 5.89"
+gem "tiny_tds", "~> 3.4" # SQL Server client through FreeTDS.
+
+# Outbound HTTP (checkout -> shipping), with trace-context propagation.
+gem "faraday", "~> 2.12"
+
+# OpenTelemetry: SDK + OTLP exporter + framework/DB/HTTP instrumentation.
+gem "opentelemetry-sdk", "~> 1.6"
+gem "opentelemetry-exporter-otlp", "~> 0.30"
+gem "opentelemetry-instrumentation-sinatra", "~> 0.24"
+gem "opentelemetry-instrumentation-rack", "~> 0.26"
+gem "opentelemetry-instrumentation-faraday", "~> 0.26"
+# SQL query spans and SQLCommenter comments are created by the Sequel extension in common/sqlcommenter.rb.
+
+# Continuous profiling: Pyroscope agent (rbspy CPU sampler) + the OTel span
+# processor that links profiles to traces. Only active when
+# PYROSCOPE_SERVER_ADDRESS is set (see common/profiling.rb).
+gem "pyroscope", "~> 1.1"
+gem "pyroscope-otel", "~> 0.2"

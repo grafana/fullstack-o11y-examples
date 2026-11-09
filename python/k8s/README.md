@@ -105,3 +105,9 @@ k8s/
 ├── services/    backends.yaml   (products + checkout + shipping)
 └── frontend/    deployment.yaml (Deployment + Service + Ingress)
 ```
+
+## SQL Server RDS option
+
+Use the [shared SQL Server guide](../../sqlserver/README.md) to replace MySQL,
+PostgreSQL, or both with SQL Server RDS while keeping this language stack.
+The guide includes Compose commands and Kubernetes image/rendering commands.

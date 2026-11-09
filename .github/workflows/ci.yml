@@ -166,3 +166,22 @@ jobs:
       # base image fails the image build even when the native build passes.
       # Frontend build args default via `${VAR:-...}`, so no secrets needed.
       - run: docker compose build
+
+      - name: Build SQL Server variants
+        working-directory: .
+        run: ./scripts/swap-db build "${{ matrix.lang }}" both
+
+  sqlserver-config:
+    name: SQL Server deployment matrix
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -r sqlserver/tests/requirements.txt
+      - run: python -m unittest discover -s sqlserver/tests -p 'test_*.py'
+      - run: node --test sqlserver/tests/sqlserver-node.test.js
+      - run: python sqlserver/tests/validate_alloy.py

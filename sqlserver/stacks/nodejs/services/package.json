@@ -1,0 +1,22 @@
+{
+  "name": "bookstore-services",
+  "version": "1.0.0",
+  "description": "Node.js bookstore backend services (products, checkout, shipping) instrumented with OpenTelemetry + SQLCommenter.",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/exporter-trace-otlp-grpc": "^0.222.0",
+    "@opentelemetry/instrumentation-express": "^0.70.0",
+    "@opentelemetry/instrumentation-http": "^0.222.0",
+    "@opentelemetry/resources": "^2.0.0",
+    "@opentelemetry/sdk-node": "^0.222.0",
+    "@opentelemetry/semantic-conventions": "^1.28.0",
+    "@pyroscope/nodejs": "^0.6.1",
+    "express": "^5.0.0",
+    "mssql": "^12.7.4"
+  }
+}

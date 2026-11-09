@@ -93,3 +93,9 @@ docker-compose/
 Each service has its own `pom.xml`, `src/main/java/...`, `application.properties`,
 and a multi-stage `Dockerfile` (build: `maven:3.9-eclipse-temurin-21`; runtime:
 `eclipse-temurin:21-jre` + the OTel Java agent).
+
+## SQL Server RDS option
+
+Use the [shared SQL Server guide](../../sqlserver/README.md) to replace MySQL,
+PostgreSQL, or both with SQL Server RDS while keeping this language stack.
+The guide includes Compose commands and Kubernetes image/rendering commands.

@@ -89,3 +89,9 @@ docker-compose/
     ├── checkout/             # Sinatra + Sequel → MySQL, calls shipping (Faraday)
     └── shipping/             # Sinatra + Sequel → PostgreSQL
 ```
+
+## SQL Server RDS option
+
+Use the [shared SQL Server guide](../../sqlserver/README.md) to replace MySQL,
+PostgreSQL, or both with SQL Server RDS while keeping this language stack.
+The guide includes Compose commands and Kubernetes image/rendering commands.
