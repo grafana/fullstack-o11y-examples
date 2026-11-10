@@ -12,7 +12,7 @@
     "@opentelemetry/exporter-trace-otlp-grpc": "^0.222.0",
     "@opentelemetry/instrumentation-express": "^0.70.0",
     "@opentelemetry/instrumentation-http": "^0.222.0",
-    "@opentelemetry/resources": "^2.0.0",
+    "@opentelemetry/resources": "^3.0.0",
     "@opentelemetry/sdk-node": "^0.222.0",
     "@opentelemetry/semantic-conventions": "^1.28.0",
     "@pyroscope/nodejs": "^0.6.1",
