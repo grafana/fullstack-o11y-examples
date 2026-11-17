@@ -8,7 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 LANGUAGES = ("python", "go", "nodejs", "java", "ruby")
 REPLACEMENTS = ("mysql", "postgres", "both")
-ALLOY_IMAGE = "grafana/alloy:v1.21.3@sha256:8ab871206bd2d8f89277f53abffee5f452a293980788d52f85fa183a87a505a4"
+ALLOY_IMAGE = "grafana/alloy:v1.22.0@sha256:9acc2529bc1edb7f5b2bd801dd8334ebc80c158e3a9e5526ecd7c9a273d43189"
 
 
 def selected_services(replacement):
