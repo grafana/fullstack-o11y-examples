@@ -5,7 +5,7 @@ go 1.26.0
 // Dependency versions are resolved by `go mod tidy` (run during the Docker build
 // and CI). Listed here so the module is buildable offline once go.sum exists.
 require (
-	github.com/go-sql-driver/mysql v1.10.1
+	github.com/go-sql-driver/mysql v1.10.2
 	github.com/lib/pq v1.12.3
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.72.0
 	go.opentelemetry.io/otel v1.47.0
@@ -20,7 +20,7 @@ require (
 	github.com/google/sqlcommenter/go/core v0.1.2
 	github.com/google/sqlcommenter/go/database/sql v0.1.1
 	github.com/grafana/otel-profiling-go v0.7.0
-	github.com/grafana/pyroscope-go v1.4.3
+	github.com/grafana/pyroscope-go v1.5.0
 	go.opentelemetry.io/otel/trace v1.47.0
 )
 
