@@ -20,8 +20,24 @@ GO
 SELECT DB_NAME() AS database_name, actual_state_desc FROM sys.database_query_store_options;
 GO
 
+-- Databases that schema details can reach. Expect every database you intend to monitor.
+SELECT name FROM sys.databases WHERE HAS_DBACCESS(name) = 1;
+GO
+
 -- Effective permission to read schema metadata on the current database. Expect 1.
 SELECT HAS_PERMS_BY_NAME(DB_NAME(), 'DATABASE', 'VIEW DEFINITION') AS can_view_definition;
+GO
+
+-- Query Store permission on the current database. Expect at least one value to be 1.
+SELECT
+  HAS_PERMS_BY_NAME(DB_NAME(), 'DATABASE', 'VIEW DATABASE STATE') AS can_view_database_state,
+  HAS_PERMS_BY_NAME(DB_NAME(), 'DATABASE', 'VIEW DATABASE PERFORMANCE STATE') AS can_view_database_performance_state;
+GO
+
+-- Server DMV permission. Expect at least one value to be 1.
+SELECT
+  HAS_PERMS_BY_NAME(NULL, NULL, 'VIEW SERVER STATE') AS can_view_server_state,
+  HAS_PERMS_BY_NAME(NULL, NULL, 'VIEW SERVER PERFORMANCE STATE') AS can_view_server_performance_state;
 GO
 
 -- ─── shipping ───────────────────────────────────────────────────────────────
@@ -32,9 +48,25 @@ GO
 SELECT DB_NAME() AS database_name, actual_state_desc FROM sys.database_query_store_options;
 GO
 
+-- Databases that schema details can reach. Expect every database you intend to monitor.
+SELECT name FROM sys.databases WHERE HAS_DBACCESS(name) = 1;
+GO
+
 -- Expect 1.
 SELECT HAS_PERMS_BY_NAME(DB_NAME(), 'DATABASE', 'VIEW DEFINITION') AS can_view_definition;
 GO
+
+-- Query Store permission on the current database. Expect at least one value to be 1.
+SELECT
+  HAS_PERMS_BY_NAME(DB_NAME(), 'DATABASE', 'VIEW DATABASE STATE') AS can_view_database_state,
+  HAS_PERMS_BY_NAME(DB_NAME(), 'DATABASE', 'VIEW DATABASE PERFORMANCE STATE') AS can_view_database_performance_state;
+GO
+
+-- Server DMV permission. Expect at least one value to be 1.
+SELECT
+  HAS_PERMS_BY_NAME(NULL, NULL, 'VIEW SERVER STATE') AS can_view_server_state,
+  HAS_PERMS_BY_NAME(NULL, NULL, 'VIEW SERVER PERFORMANCE STATE') AS can_view_server_performance_state;
+GO  
 
 -- If a Query Store query returns no rows or an error, or can_view_definition returns 0,
 -- the grants are not effective on that database. Re-run the database-level grants from
