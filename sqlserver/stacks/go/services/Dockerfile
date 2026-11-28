@@ -1,5 +1,5 @@
 # Build context is ./services (single Go module for all three services).
-FROM golang:1.27@sha256:512690a5660563b57d37ecc31129e7f136e831db2aed24a1dbeb8ad7380dc0fa AS build
+FROM golang:1.27@sha256:5f1b98fa02fe396ebce2a0227a0e08309e11792915b9dd2e1f71053d7e7e6666 AS build
 ARG SERVICE
 WORKDIR /src
 COPY . .

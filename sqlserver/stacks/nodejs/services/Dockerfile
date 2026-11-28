@@ -1,5 +1,5 @@
 # Build context is ./services so the shared `common/` module is available.
-FROM node:24-slim@sha256:ba849c60be29959425b8734d57b8b4b7d56f98edd9504c9af091d5281095a71e
+FROM node:24-slim@sha256:873f586f3794f52281bd039bf02c048a0be08fde619338f9941bad1eb6b34530
 ARG SERVICE
 WORKDIR /app
 ENV NODE_ENV=production
