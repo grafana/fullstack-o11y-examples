@@ -1,2 +1,2 @@
 -r ../common/base-requirements.txt
-pymssql==2.3.13
+pymssql==2.4.6
