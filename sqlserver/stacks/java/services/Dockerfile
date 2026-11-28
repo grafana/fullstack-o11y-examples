@@ -1,5 +1,5 @@
 # Build stage: compile the Spring Boot fat jar.
-FROM maven:3.9-eclipse-temurin-21@sha256:8f6ac126f7810bb5549c4cd122d2bf0e9cda5bdeb0838aa928f09e779fd8bef8 AS build
+FROM maven:3.10-eclipse-temurin-21@sha256:af3a049b2808ffaeccd31e2c2eba0d47776468d1e4f2fd6c1f9fd2f89aabf602 AS build
 ARG SERVICE
 WORKDIR /app
 COPY ${SERVICE}/pom.xml .
@@ -16,7 +16,7 @@ RUN cp "$JAVA_HOME/lib/security/cacerts" /tmp/cacerts \
        done
 
 # Runtime stage: JRE + OpenTelemetry Java agent for auto-instrumentation.
-FROM eclipse-temurin:25-jre@sha256:f9e65324a37f28209ce7dd0e5149a7aa954520ed936fb87813cf6ded2400a112
+FROM eclipse-temurin:25-jre@sha256:4ed132f6832e9804b123e89a849a7b4502756ae64a4ee08ebab939d9d5d0a9fa
 WORKDIR /app
 ADD https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v2.33.1/opentelemetry-javaagent.jar /otel/opentelemetry-javaagent.jar
 # Pyroscope OTel extension: when loaded into the OTel agent it runs the embedded
